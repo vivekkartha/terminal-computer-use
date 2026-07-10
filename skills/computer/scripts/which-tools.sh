@@ -10,7 +10,7 @@ usage() {
   cat <<'EOF'
 usage: which-tools.sh
 
-Print which runtime/tools are available for Terminal Computer Use.
+Print OS-relevant tools and the skill script library.
 EOF
   exit "${1:-0}"
 }
@@ -20,24 +20,36 @@ EOF
 check() {
   local name="$1"
   if command -v "$name" >/dev/null 2>&1; then
-    printf 'OK   %-16s %s\n' "$name" "$(command -v "$name")"
+    printf '  OK   %-14s %s\n' "$name" "$(command -v "$name")"
   else
-    printf 'MISS %-16s\n' "$name"
+    printf '  MISS %-14s\n' "$name"
   fi
 }
 
-echo "=== Terminal Computer Use tool check ==="
-echo "OS: $TCU_OS"
+echo "Terminal Computer Use — tools ($TCU_OS)"
 echo "SKILL_ROOT: $SKILL_ROOT"
 echo
-for c in bash python3 ruby osascript open pbcopy pbpaste screencapture \
-         xdg-open notify-send wl-copy wl-paste xclip gio jq; do
-  check "$c"
-done
+echo "core"
+check bash
+check python3
 
 echo
-echo "=== skill library ==="
-find "$SCRIPTS_DIR" -maxdepth 1 -type f \( -name '*.sh' -o -name '*.py' -o -name '*.rb' \) \
+echo "platform"
+case "$TCU_OS" in
+  macos)
+    for c in open osascript pbcopy pbpaste screencapture; do check "$c"; done
+    ;;
+  linux)
+    for c in xdg-open notify-send wl-copy wl-paste xclip gio; do check "$c"; done
+    ;;
+  *)
+    echo "  (no platform checklist for OS=$TCU_OS)"
+    ;;
+esac
+
+echo
+echo "scripts"
+find "$SCRIPTS_DIR" -maxdepth 1 -type f \( -name '*.sh' -o -name '*.py' \) \
   2>/dev/null | sort | while read -r f; do
   printf '  %s\n' "$(basename "$f")"
 done
