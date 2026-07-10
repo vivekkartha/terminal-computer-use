@@ -4,7 +4,7 @@
 
 Open apps, organize files, clipboard, notify, screenshots. Works with Claude Code, Cursor, Codex, Grok, Gemini CLI, and any agent that can run shell commands.
 
-[![CI](https://github.com/vivekkartha/terminal-computer-use/actions/workflows/ci.yml/badge.svg)](https://github.com/vivekkartha/terminal-computer-use/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/vivekkartha/terminal-computer-use?style=flat)](https://github.com/vivekkartha/terminal-computer-use/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-compatible-blue)](https://skills.sh)
 
