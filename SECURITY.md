@@ -20,10 +20,13 @@ If a script can be tricked into deleting `$HOME`, path traversal, command inject
 or similar:
 
 1. **Do not** open a public GitHub issue with exploit details.
-2. Use a **private** GitHub security advisory on this repository, or contact the
-   maintainer via their GitHub profile.
+2. Use **private vulnerability reporting** on GitHub:  
+   [Report a vulnerability](https://github.com/vivekkartha/terminal-computer-use/security/advisories/new)  
+   (Security → Advisories → Report a vulnerability)
 
 Include: affected script, reproduction steps, impact, OS.
+
+See also [docs/TRUST.md](docs/TRUST.md) for what we do and do not claim.
 
 ## Supported versions
 

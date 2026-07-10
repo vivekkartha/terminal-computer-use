@@ -6,6 +6,7 @@ Open apps, organize files, clipboard, notify, screenshots. Works with Claude Cod
 
 [![Release](https://img.shields.io/github/v/release/vivekkartha/terminal-computer-use?style=flat)](https://github.com/vivekkartha/terminal-computer-use/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Security Policy](https://img.shields.io/badge/Security-policy-blue.svg)](SECURITY.md)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-compatible-blue)](https://skills.sh)
 
 | Vision Computer Use | **This** |
@@ -69,11 +70,19 @@ In your agent:
 
 ---
 
-## Safety
+## Trust & safety
 
-- Mutators support `--dry-run`; `TCU_SAFE_MODE=1` forces dry-run  
-- Refuses `$HOME` / system paths; installer skips unmanaged dirs unless `--force`  
-- [SECURITY.md](SECURITY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
+| | |
+|--|--|
+| License | **MIT** — enterprise-friendly, no fees |
+| Telemetry | **None** — scripts do not phone home |
+| Defaults | `--dry-run`, `TCU_SAFE_MODE`, trash not `rm -rf`, path guards |
+| Disclosure | [SECURITY.md](SECURITY.md) · private vulnerability reporting on GitHub |
+| Supply chain | Dependabot enabled · public source · versioned releases |
+
+This skill can move files and control apps **by design**. It is **not** a paid security certification (SOC 2 / ISO). For evaluators: [docs/TRUST.md](docs/TRUST.md).
+
+More: [Troubleshooting](docs/TROUBLESHOOTING.md)
 
 ---
 

@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "description": "Computer Use for any coding agent — via the terminal, not pixel clicking",
   "license": "MIT",
+  "private": false,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vivekkartha/terminal-computer-use.git"
