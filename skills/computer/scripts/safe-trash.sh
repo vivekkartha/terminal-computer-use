@@ -11,6 +11,7 @@ usage() {
 usage: safe-trash.sh [--dry-run] <path> [...]
 
 Move paths to the system Trash / Wastebasket. Never uses rm -rf.
+Respects TCU_SAFE_MODE=1 (forces dry-run).
 EOF
   exit "${1:-0}"
 }
@@ -26,45 +27,18 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ ${#PATHS[@]} -gt 0 ]] || usage 1
-
-if safe_mode && ! $DRY; then
-  log "TCU_SAFE_MODE=1 → forcing dry-run (pass after disabling safe mode to execute)"
-  DRY=true
-fi
+DRY="$(apply_safe_mode "$DRY")"
 
 for t in "${PATHS[@]}"; do
-  p="$t"
-  [[ "$p" == ~* ]] && p="${p/#\~/$HOME}"
+  p="$(expand_user "$t")"
   [[ -e "$p" ]] || die "not found: $p"
   assert_safe_path "$p"
 
-  if $DRY; then
+  if [[ "$DRY" == "true" ]]; then
     log "[dry-run] trash: $p"
     continue
   fi
 
-  case "$TCU_OS" in
-    macos)
-      if have trash; then
-        trash "$p"
-      else
-        # Finder trash via AppleScript
-        abs="$(cd "$(dirname "$p")" && pwd)/$(basename "$p")"
-        osascript -e "tell application \"Finder\" to delete POSIX file \"${abs}\"" >/dev/null
-      fi
-      ;;
-    linux)
-      if have gio; then
-        gio trash "$p"
-      elif have trash-put; then
-        trash-put "$p"
-      else
-        die "no trash helper (install trash-cli or use gio). refusing rm."
-      fi
-      ;;
-    *)
-      die "trash not supported on OS=$TCU_OS"
-      ;;
-  esac
+  tcu_trash "$p" || die "trash failed for: $p (install trash-cli/gio on Linux)"
   log "trashed: $p"
 done

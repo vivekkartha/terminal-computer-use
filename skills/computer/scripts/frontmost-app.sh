@@ -16,6 +16,4 @@ EOF
 }
 
 [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && usage 0
-require_cmd osascript
-
-osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true'
+tcu_frontmost_app || die "frontmost-app failed (unsupported OS or missing tools)"

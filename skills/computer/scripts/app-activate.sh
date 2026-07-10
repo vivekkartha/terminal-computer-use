@@ -18,7 +18,6 @@ EOF
 [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && usage 0
 [[ $# -ge 1 ]] || usage 1
 APP="$*"
-require_cmd osascript
 
-osascript -e "tell application \"${APP}\" to activate"
+tcu_activate_app "$APP" || die "failed to activate: $APP (unsupported OS or missing tools)"
 log "activated: $APP"

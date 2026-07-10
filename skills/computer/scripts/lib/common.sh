@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # Shared helpers for Terminal Computer Use scripts.
 # shellcheck disable=SC2034
+# Compatible with Bash 3.2+ (macOS /bin/bash).
 
-# Resolve skill paths relative to this file (not a hardcoded ~/.grok path).
-# Override with TERMINAL_COMPUTER_USE_HOME if needed.
 _TCU_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPUTER_SCRIPTS_DIR="$(cd "${_TCU_LIB_DIR}/.." && pwd)"
 if [[ -n "${TERMINAL_COMPUTER_USE_HOME:-}" ]]; then
@@ -29,13 +28,26 @@ require_cmd() {
   done
 }
 
-# Expand ~ and relative paths to absolute
-abspath() {
+require_macos() {
+  [[ "$TCU_OS" == "macos" ]] || die "this command requires macOS (detected: $TCU_OS)"
+}
+
+# Expand leading ~ only (literal path; no word-split, no glob)
+expand_user() {
   local p="${1:-}"
-  [[ -n "$p" ]] || die "abspath: empty path"
-  if [[ "$p" == ~* ]]; then
-    p="${p/#\~/$HOME}"
+  [[ -n "$p" ]] || die "expand_user: empty path"
+  if [[ "$p" == "~" ]]; then
+    printf '%s\n' "$HOME"
+  elif [[ "$p" == "~/"* ]]; then
+    printf '%s\n' "${HOME}/${p#~/}"
+  else
+    printf '%s\n' "$p"
   fi
+}
+
+abspath() {
+  local p
+  p="$(expand_user "${1:-}")"
   if [[ -d "$p" ]]; then
     (cd "$p" && pwd)
   elif [[ -e "$p" ]]; then
@@ -52,8 +64,7 @@ abspath() {
 }
 
 ensure_parent() {
-  local p="$1"
-  mkdir -p "$(dirname "$p")"
+  mkdir -p "$(dirname "$1")"
 }
 
 is_truthy() {
@@ -63,20 +74,60 @@ is_truthy() {
   esac
 }
 
-# TCU_SAFE_MODE=1 forces dry-run behavior unless caller passes force flag
 safe_mode() {
   is_truthy "${TCU_SAFE_MODE:-0}"
 }
 
-# Refuse obviously catastrophic targets
-assert_safe_path() {
-  local p="$1"
-  local resolved
-  resolved="$(cd "$(dirname "$p")" 2>/dev/null && pwd)/$(basename "$p")" 2>/dev/null || resolved="$p"
-  case "$resolved" in
-    /|"$HOME"|"$HOME/"|"$HOME/." ) die "refusing unsafe path: $p" ;;
-  esac
-  if [[ "$resolved" == "/" || "$resolved" == "/System" || "$resolved" == "/usr" ]]; then
-    die "refusing unsafe path: $p"
+# Apply TCU_SAFE_MODE: force dry-run unless already dry
+# Usage: DRY=$(apply_safe_mode "$DRY")  where DRY is true|false
+apply_safe_mode() {
+  local dry="$1"
+  if safe_mode && [[ "$dry" != "true" ]]; then
+    log "TCU_SAFE_MODE=1 → forcing dry-run"
+    echo "true"
+  else
+    echo "$dry"
   fi
 }
+
+# Refuse catastrophic mutation targets (files or dirs)
+assert_safe_path() {
+  local p="$1"
+  local resolved home home_p
+  p="$(expand_user "$p")"
+  home="$HOME"
+  # macOS may physicalize /Users → /System/Volumes/Data/Users
+  home_p="$(cd "$home" 2>/dev/null && pwd -P 2>/dev/null || echo "$home")"
+
+  if [[ -e "$p" ]]; then
+    if [[ -d "$p" ]]; then
+      resolved="$(cd "$p" && pwd 2>/dev/null)"
+      resolved_p="$(cd "$p" && pwd -P 2>/dev/null || echo "$resolved")"
+    else
+      local parent_log parent_p
+      parent_log="$(cd "$(dirname "$p")" && pwd)"
+      parent_p="$(cd "$(dirname "$p")" && pwd -P 2>/dev/null || echo "$parent_log")"
+      resolved="${parent_log}/$(basename "$p")"
+      resolved_p="${parent_p}/$(basename "$p")"
+    fi
+  else
+    local parent
+    parent="$(cd "$(dirname "$p")" 2>/dev/null && pwd)" || die "refusing path with missing parent: $p"
+    resolved="${parent}/$(basename "$p")"
+    resolved_p="$resolved"
+  fi
+
+  # Exact home / root only (not "anything under home")
+  if [[ "$resolved" == "/" || "$resolved_p" == "/" \
+     || "$resolved" == "$home" || "$resolved" == "$home/" \
+     || "$resolved_p" == "$home_p" || "$resolved_p" == "$home_p/" ]]; then
+    die "refusing unsafe path: $p"
+  fi
+  case "$resolved" in
+    /System|/usr|/bin|/sbin|/etc) die "refusing unsafe path: $p" ;;
+  esac
+  case "$resolved_p" in
+    /System|/usr|/bin|/sbin|/etc) die "refusing unsafe path: $p" ;;
+  esac
+}
+

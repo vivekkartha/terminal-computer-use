@@ -10,7 +10,7 @@ usage() {
   cat <<'EOF'
 usage: list-apps.sh [--json]
 
-List running applications (visible GUI apps via System Events).
+List running applications (one name per line, or JSON array).
 EOF
   exit "${1:-0}"
 }
@@ -24,12 +24,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-require_cmd osascript
+raw="$(tcu_list_apps)" || die "list-apps failed (unsupported OS or missing tools)"
+# trim empty lines
+raw="$(printf '%s\n' "$raw" | sed '/^$/d')"
 
 if $JSON; then
-  osascript -e 'tell application "System Events" to get name of every process whose background only is false' \
-    | python3 -c 'import sys,json; names=[n.strip() for n in sys.stdin.read().split(",") if n.strip()]; print(json.dumps(names, indent=2))'
+  printf '%s\n' "$raw" | python3 -c 'import sys,json; print(json.dumps([l.strip() for l in sys.stdin if l.strip()], indent=2))'
 else
-  osascript -e 'tell application "System Events" to get name of every process whose background only is false' \
-    | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -v '^$' | sort -f
+  printf '%s\n' "$raw" | sort -f
 fi

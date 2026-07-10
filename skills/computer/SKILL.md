@@ -10,7 +10,7 @@ description: >
 metadata:
   short-description: "Terminal Computer Use (shell + scripts)"
   author: vivekkartha
-  version: "0.1.0"
+  version: "0.1.1"
 license: MIT
 compatibility: "Requires bash and python3. macOS full; Linux core (open/clipboard/notify/fs)."
 ---
@@ -90,8 +90,8 @@ Set `TCU_SAFE_MODE=1` to prefer dry-run behavior for mutating flows.
 | List / frontmost app | `scripts/list-apps.sh`, `scripts/frontmost-app.sh` |
 | Reveal in file manager | `scripts/reveal-in-finder.sh` |
 | Safe move / copy | `scripts/fs-move.sh`, `scripts/fs-copy.sh` |
-| Organize by ext/date | `scripts/fs-organize.py` |
-| Smart organize (categories) | `scripts/fs-smart-organize.py` |
+| Organize (smart / extension / date) | `scripts/fs-organize.py` (`--by smart` default) |
+| Smart organize (shim) | `scripts/fs-smart-organize.py` → `--by smart` |
 | Safe trash | `scripts/safe-trash.sh` |
 | Clipboard | `scripts/clipboard.sh` |
 | Notification | `scripts/notify.sh` |

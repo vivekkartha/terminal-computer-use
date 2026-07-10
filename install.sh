@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
-# Terminal Computer Use — multi-agent installer
-# usage: ./install.sh [--dry-run] [--project] [--symlink] [--agent NAME]...
+# Terminal Computer Use — multi-agent installer (Bash 3.2+)
+# usage: ./install.sh [--dry-run] [--project] [--symlink] [--force] [--agent NAME]...
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_SRC="${ROOT}/skills/computer"
 CMD_SRC="${ROOT}/agents/computer.md"
+MARKER=".tcu-managed"
 
 DRY=false
 SYMLINK=false
 PROJECT=false
-AGENTS=() # empty = auto-detect all known
+FORCE=false
+AGENTS=() # empty = auto-detect existing agent homes
 
 usage() {
   cat <<'EOF'
@@ -20,17 +22,20 @@ Install the `computer` skill into coding-agent skill directories.
 
 Options:
   --dry-run       Print actions only
-  --project       Install into current project (./.agents/skills/computer)
+  --project       Install into current project only
   --symlink       Symlink instead of copy (dev-friendly)
-  --agent NAME    Install only for agent: grok|claude|cursor|codex|agents|all
-                  (repeatable; default: all detected + generic agents path)
+  --force         Overwrite unmanaged destinations
+  --agent NAME    grok|claude|cursor|codex|agents|all (repeatable)
   -h, --help      Show help
+
+By default only installs into agent dirs that already exist
+(~/.claude, ~/.grok, …), plus always ensures ~/.agents/skills.
 
 Examples:
   ./install.sh
   ./install.sh --dry-run
-  ./install.sh --agent grok --agent claude
-  ./install.sh --project --symlink
+  ./install.sh --agent grok --symlink
+  ./install.sh --project --force
 EOF
   exit "${1:-0}"
 }
@@ -43,6 +48,7 @@ while [[ $# -gt 0 ]]; do
     --dry-run) DRY=true; shift ;;
     --symlink) SYMLINK=true; shift ;;
     --project) PROJECT=true; shift ;;
+    --force) FORCE=true; shift ;;
     --agent)
       [[ $# -ge 2 ]] || { log "error: --agent requires a name"; exit 1; }
       AGENTS+=("$2"); shift 2
@@ -53,120 +59,174 @@ done
 
 [[ -f "${SKILL_SRC}/SKILL.md" ]] || { log "error: missing ${SKILL_SRC}/SKILL.md"; exit 1; }
 
-targets=()
+# Table: name|global_skill_path|optional_command_path|detect_dir
+# detect_dir empty = always candidate when selected
+AGENT_ROWS="
+grok|${HOME}/.grok/skills/computer|${HOME}/.grok/commands/computer.md|${HOME}/.grok
+claude|${HOME}/.claude/skills/computer||${HOME}/.claude
+cursor|${HOME}/.cursor/skills/computer||${HOME}/.cursor
+agents|${HOME}/.agents/skills/computer||${HOME}/.agents
+codex|${HOME}/.agents/skills/computer||${HOME}/.agents
+"
 
-add_target() {
-  local path="$1"
-  targets+=("$path")
+should_agent() {
+  local name="$1"
+  if [[ ${#AGENTS[@]} -eq 0 ]]; then
+    return 0
+  fi
+  local a
+  for a in "${AGENTS[@]}"; do
+    [[ "$a" == "all" || "$a" == "$name" ]] && return 0
+  done
+  return 1
+}
+
+targets=()       # skill install paths
+cmd_targets=()   # optional slash command files
+
+add_unique() {
+  local arr_name="$1" val="$2"
+  local i
+  eval "local n=\${#$arr_name[@]}"
+  i=0
+  while [[ $i -lt $n ]]; do
+    eval "local cur=\${$arr_name[$i]}"
+    [[ "$cur" == "$val" ]] && return
+    i=$((i + 1))
+  done
+  eval "$arr_name+=(\"\$val\")"
 }
 
 if $PROJECT; then
-  add_target "$(pwd)/.agents/skills/computer"
-  add_target "$(pwd)/.claude/skills/computer"
-  add_target "$(pwd)/.grok/skills/computer"
-  add_target "$(pwd)/.cursor/skills/computer"
+  add_unique targets "$(pwd)/.agents/skills/computer"
+  # only other project paths if parent already used in this project
+  [[ -d "$(pwd)/.claude" ]] && add_unique targets "$(pwd)/.claude/skills/computer"
+  [[ -d "$(pwd)/.grok" ]] && add_unique targets "$(pwd)/.grok/skills/computer"
+  [[ -d "$(pwd)/.cursor" ]] && add_unique targets "$(pwd)/.cursor/skills/computer"
 else
-  # Global installs
-  should() {
-    local name="$1"
+  # always include generic agents path when no filter or agents/codex/all
+  while IFS= read -r row; do
+    [[ -z "$row" ]] && continue
+    name="${row%%|*}"
+    rest="${row#*|}"
+    skill="${rest%%|*}"
+    rest2="${rest#*|}"
+    cmd="${rest2%%|*}"
+    detect="${rest2#*|}"
+
+    should_agent "$name" || continue
+
+    # auto mode: only if detect dir exists, except always allow agents
     if [[ ${#AGENTS[@]} -eq 0 ]]; then
-      return 0
+      if [[ "$name" == "agents" || "$name" == "codex" ]]; then
+        add_unique targets "$skill"
+      elif [[ -d "$detect" ]]; then
+        add_unique targets "$skill"
+      fi
+    else
+      add_unique targets "$skill"
     fi
-    local a
-    for a in "${AGENTS[@]}"; do
-      [[ "$a" == "all" || "$a" == "$name" ]] && return 0
-    done
-    return 1
-  }
 
-  if should grok; then add_target "${HOME}/.grok/skills/computer"; fi
-  if should claude; then add_target "${HOME}/.claude/skills/computer"; fi
-  if should cursor; then add_target "${HOME}/.cursor/skills/computer"; fi
-  if should agents || should codex; then add_target "${HOME}/.agents/skills/computer"; fi
-
-  # If user passed only specific agents that didn't match, still allow explicit list
-  if [[ ${#AGENTS[@]} -gt 0 && ${#targets[@]} -eq 0 ]]; then
-    log "error: no targets for agents: ${AGENTS[*]}"
-    exit 1
-  fi
+    if [[ -n "$cmd" && -f "$CMD_SRC" ]]; then
+      if should_agent grok || should_agent all || [[ ${#AGENTS[@]} -eq 0 && -d "${HOME}/.grok" ]]; then
+        if [[ "$name" == "grok" ]]; then
+          add_unique cmd_targets "$cmd"
+        fi
+      fi
+    fi
+  done <<EOF
+$(printf '%s\n' "$AGENT_ROWS")
+EOF
 fi
 
-# Deduplicate (bash 3.2–compatible; no associative arrays)
-uniq_targets=()
-for t in "${targets[@]}"; do
-  dup=false
-  for u in "${uniq_targets[@]+"${uniq_targets[@]}"}"; do
-    [[ "$u" == "$t" ]] && dup=true && break
-  done
-  $dup && continue
-  uniq_targets+=("$t")
-done
-targets=("${uniq_targets[@]}")
+# Ensure at least agents path if nothing matched
+if [[ ${#targets[@]} -eq 0 ]]; then
+  add_unique targets "${HOME}/.agents/skills/computer"
+fi
+
+is_managed() {
+  local dest="$1"
+  [[ -L "$dest" ]] && return 0
+  [[ -f "${dest}/${MARKER}" ]] && return 0
+  [[ ! -e "$dest" ]] && return 0
+  return 1
+}
 
 install_one() {
   local dest="$1"
+  if [[ -e "$dest" ]] && ! is_managed "$dest" && ! $FORCE; then
+    log "skip (unmanaged, use --force): $dest"
+    return 0
+  fi
+
   if $DRY; then
     if $SYMLINK; then
       log "[dry-run] ln -sfn $SKILL_SRC $dest"
     else
-      log "[dry-run] rsync → $dest"
+      log "[dry-run] install → $dest"
     fi
-    return
+    return 0
   fi
+
   mkdir -p "$(dirname "$dest")"
+
   if $SYMLINK; then
-    rm -rf "$dest"
+    if [[ -e "$dest" || -L "$dest" ]]; then
+      if is_managed "$dest" || $FORCE; then
+        rm -rf "$dest"
+      else
+        log "skip (unmanaged): $dest"
+        return 0
+      fi
+    fi
     ln -sfn "$SKILL_SRC" "$dest"
     log "symlinked: $dest → $SKILL_SRC"
-  else
-    mkdir -p "$dest"
-    if command -v rsync >/dev/null 2>&1; then
-      rsync -a --delete --exclude '.DS_Store' "${SKILL_SRC}/" "${dest}/"
-    else
-      rm -rf "${dest}"
-      mkdir -p "$dest"
-      cp -R "${SKILL_SRC}/." "${dest}/"
-    fi
-    # ensure executables
-    find "$dest/scripts" -type f \( -name '*.sh' -o -name '*.py' \) -exec chmod +x {} \; 2>/dev/null || true
-    log "installed: $dest"
+    return 0
   fi
+
+  # copy install
+  if [[ -L "$dest" ]]; then
+    rm -f "$dest"
+  fi
+  mkdir -p "$dest"
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a --delete --exclude '.DS_Store' "${SKILL_SRC}/" "${dest}/"
+  else
+    # careful replace of managed tree only
+    find "$dest" -mindepth 1 -maxdepth 1 ! -name "$MARKER" -exec rm -rf {} + 2>/dev/null || true
+    cp -R "${SKILL_SRC}/." "${dest}/"
+  fi
+  printf 'terminal-computer-use\n' > "${dest}/${MARKER}"
+  find "$dest/scripts" -type f \( -name '*.sh' -o -name '*.py' \) -exec chmod +x {} \; 2>/dev/null || true
+  log "installed: $dest"
 }
 
 log "Terminal Computer Use installer"
 log "source: $SKILL_SRC"
-log "mode:   $(if $DRY; then echo dry-run; else echo execute; fi) $(if $SYMLINK; then echo symlink; else echo copy; fi)"
+log "mode:   $(if $DRY; then echo dry-run; else echo execute; fi) $(if $SYMLINK; then echo symlink; else echo copy; fi)$(if $FORCE; then echo " force"; fi)"
 log "targets (${#targets[@]}):"
-for t in "${targets[@]}"; do log "  - $t"; done
+local_t=
+for local_t in "${targets[@]}"; do log "  - $local_t"; done
 log
 
-for t in "${targets[@]}"; do
-  install_one "$t"
+for local_t in "${targets[@]}"; do
+  install_one "$local_t"
 done
 
-# Grok slash command helper
-if ! $PROJECT; then
-  install_cmd=false
-  if [[ ${#AGENTS[@]} -eq 0 ]] || printf '%s\n' "${AGENTS[@]}" | grep -qxE 'all|grok'; then
-    install_cmd=true
-  fi
-  if $install_cmd && [[ -f "$CMD_SRC" ]]; then
-    cmd_dest="${HOME}/.grok/commands/computer.md"
+if [[ ${#cmd_targets[@]} -gt 0 ]]; then
+  for c in "${cmd_targets[@]}"; do
     if $DRY; then
-      log "[dry-run] install slash command → $cmd_dest"
+      log "[dry-run] slash command → $c"
     else
-      mkdir -p "$(dirname "$cmd_dest")"
-      # Point at skill-relative wording; command body is already generic enough
-      cp "$CMD_SRC" "$cmd_dest"
-      log "slash command: $cmd_dest"
+      mkdir -p "$(dirname "$c")"
+      cp "$CMD_SRC" "$c"
+      log "slash command: $c"
     fi
-  fi
+  done
 fi
 
-# Export hint
-if ! $DRY; then
+if ! $DRY && [[ ${#targets[@]} -gt 0 ]]; then
   log
-  log "Done. Optional: export TERMINAL_COMPUTER_USE_HOME=\"${targets[0]}\""
-  log "Verify:  bash \"${targets[0]}/scripts/doctor.sh\""
+  log "Done. Verify:  bash \"${targets[0]}/scripts/doctor.sh\""
   log "Try:     /computer organize my desktop"
 fi
