@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.1] — 2026-07-11
+
+### Changed
+- README: shorter front page; agent prompt moved to `docs/AGENT_PROMPT.md`
+- Install: clone/`./install.sh` first; skills CLI secondary
+- Tone and accuracy pass (no CI claims until Actions is public)
+- TRUST.md: public claims only (no maintainer TODOs)
+- Agent prompt: install to `~/terminal-computer-use`, not only `/tmp`
+
 ## [0.2.0] — 2026-07-11
 
 ### Added
@@ -10,9 +19,9 @@
 - Doctor: version, macOS Automation hint, Linux clipboard/trash hints, try-next commands
 
 ### Changed
-- README: 30s try path, support matrix, CI badge, leaner structure
+- README: 30s try path, support matrix, leaner structure
 - SECURITY.md: explicit threat model
-- CI runs smoke components on Ubuntu
+- CI workflow prepared for Ubuntu (publish when `workflow` scope available)
 
 ## [0.1.1] — 2026-07-11
 
@@ -30,10 +39,8 @@
 - Shared `lib/fs.sh` for move/copy
 - Platform layer owns apps + trash
 - Table-driven installer; only targets existing agent homes by default
-- README redesign for discovery / conversion
 
 ## [0.1.0] — 2026-07-11
 
 ### Added
 - Initial open-source release of **Terminal Computer Use**
-

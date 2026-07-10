@@ -10,7 +10,7 @@ description: >
 metadata:
   short-description: "Terminal Computer Use (shell + scripts)"
   author: vivekkartha
-  version: "0.2.0"
+  version: "0.2.1"
 license: MIT
 compatibility: "Requires bash and python3. macOS full; Linux core (open/clipboard/notify/fs)."
 ---
@@ -117,7 +117,7 @@ See `references/safety.md`, `references/macos-cli.md`, `references/linux-cli.md`
 - Prefer `safe-trash.sh` over `rm`.
 - Quit apps gracefully; avoid `kill -9` unless hung + requested.
 - Network/message sends need explicit user intent.
-- Bulk file ops: dry-run first unless user said to just do it.
+- Bulk file ops: dry-run first unless the user asked to apply immediately.
 
 ## Platform support
 

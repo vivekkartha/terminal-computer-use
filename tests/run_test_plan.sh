@@ -198,7 +198,7 @@ fi
 # T18 Agent prompt
 if [[ -f "${ROOT}/docs/AGENT_PROMPT.md" ]] \
   && grep -q 'Bootstrap' "${ROOT}/docs/AGENT_PROMPT.md" \
-  && grep -q 'Find the skill' "${ROOT}/README.md"; then
+  && grep -q 'AGENT_PROMPT.md' "${ROOT}/README.md"; then
   record T18 PASS
 else
   record T18 FAIL

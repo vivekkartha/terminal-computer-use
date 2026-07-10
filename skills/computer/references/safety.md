@@ -1,7 +1,7 @@
 # Safety guide
 
 Terminal Computer Use can **move files, quit apps, and change your desktop**.
-Treat agent sessions with this skill like giving a careful assistant shell access.
+Treat agent sessions with this skill as shell access for desktop tasks.
 
 ## Built-in guardrails
 

@@ -1,9 +1,9 @@
 {
   "name": "terminal-computer-use",
-  "version": "0.2.0",
-  "description": "Computer Use for any coding agent — via the terminal, not pixel clicking",
+  "version": "0.2.1",
+  "description": "Shell-based desktop automation for coding agents (not vision Computer Use)",
   "license": "MIT",
-  "private": false,
+  "private": true,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vivekkartha/terminal-computer-use.git"

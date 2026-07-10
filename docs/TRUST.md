@@ -1,60 +1,40 @@
-# Trust & security signals
+# Trust & security
 
-This document lists **what this project claims** and **what free, verifiable signals** support that. Nothing here is a paid audit (SOC 2, ISO 27001, etc.).
+What this project claims, and what free signals support that. This is **not** a paid audit (SOC 2, ISO 27001, etc.).
 
-## What we claim
+## Claims
 
 | Claim | Meaning |
 |-------|---------|
-| MIT licensed | Free to use, modify, and redistribute under [LICENSE](../LICENSE) |
-| No telemetry | Scripts and installer do not phone home or collect analytics |
+| MIT license | Free to use, modify, and redistribute under [LICENSE](../LICENSE) |
+| No telemetry | Installer and scripts do not send analytics |
 | Open source | Full source on GitHub; inspect before you run |
-| Safe defaults | Mutating ops support `--dry-run`; trash over `rm -rf`; path guards |
-| Responsible disclosure | [SECURITY.md](../SECURITY.md) + private vulnerability reporting |
+| Safe defaults | `--dry-run` on mutators; trash over `rm -rf`; path guards |
+| Disclosure | [SECURITY.md](../SECURITY.md) and private vulnerability reporting on GitHub |
 
-## What we do **not** claim
+## Not claimed
 
 - Not “enterprise certified” or “guaranteed secure”
-- Not a substitute for your org’s agent / endpoint policy
-- Not a formal third-party penetration test
+- Not a substitute for your organization’s agent or endpoint policy
+- Not a third-party penetration test
 
-By design, this skill can **move files and control apps**. Treat it like shell access for a careful assistant.
+By design, this skill can **move files and control apps**. Treat it as shell access you gave the agent.
 
-## Free signals on this repo
+## Verifiable on this repository
 
 | Signal | Status |
 |--------|--------|
-| OSI-style permissive license (MIT) | ✅ |
-| SECURITY.md + threat model | ✅ |
-| Private vulnerability reporting (GitHub) | ✅ (enable in repo Security settings if missing) |
-| Dependabot config | ✅ `.github/dependabot.yml` |
-| Automated tests + `smoke_release.sh` | ✅ |
-| Versioned releases + CHANGELOG | ✅ |
-| Secret scanning (GitHub public) | ✅ when enabled on the repo |
-| OpenSSF Scorecard Action | ⬜ needs `workflow` scope to push CI (see below) |
-| OpenSSF Best Practices Badge | ⬜ free self-cert at [bestpractices.dev](https://www.bestpractices.dev) — repo criteria mostly met |
+| MIT license | Yes |
+| SECURITY.md + threat model | Yes |
+| Private vulnerability reporting | Yes ([report](https://github.com/vivekkartha/terminal-computer-use/security/advisories/new)) |
+| Dependabot config | Yes (`.github/dependabot.yml`) |
+| Automated tests (`tests/`) | Yes |
+| Versioned GitHub Releases + CHANGELOG | Yes |
+| Secret scanning (GitHub) | Yes on public repo settings |
 
-## Optional next steps (maintainer, ~15 min)
+## For evaluators
 
-1. **OpenSSF Best Practices (Passing)**  
-   Create a project at https://www.bestpractices.dev/en/projects/new pointing at this repo.  
-   Many “Passing” answers are already true (license, docs, tests, SECURITY.md, releases).
-
-2. **Scorecard + CI badge**  
-   ```bash
-   gh auth refresh -h github.com -s workflow
-   git add .github/workflows/
-   git commit -m "ci: scorecard + tests"
-   git push
-   ```
-
-3. Keep **Dependabot** PRs merged when Actions/npm updates appear.
-
-## For enterprise evaluators
-
-Recommended review path:
-
-1. Read [SECURITY.md](../SECURITY.md) (threat model)  
-2. Run `bash tests/smoke_release.sh` from a clean clone  
-3. Inspect `skills/computer/scripts/` — no network exfil helpers  
+1. Read [SECURITY.md](../SECURITY.md)  
+2. From a clean clone: `bash tests/smoke_release.sh`  
+3. Skim `skills/computer/scripts/` — no network exfil helpers  
 4. Pilot with `TCU_SAFE_MODE=1` and `--dry-run` first  

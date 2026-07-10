@@ -11,8 +11,8 @@ open/quit apps, and change clipboard state** on your machine.
 | You review dry-runs for bulk file ops | The skill blocks all bad agent ideas |
 | You run as a normal user (not root) | Network isolation is provided |
 
-**You are giving a careful assistant shell access.** Only enable this skill in
-agents and accounts you control.
+Only enable this skill in agents and accounts you control — it is effectively
+shell access for desktop tasks.
 
 ## Reporting vulnerabilities
 
