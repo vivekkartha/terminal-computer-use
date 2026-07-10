@@ -37,22 +37,52 @@ Options: `--dry-run` · `--symlink` · `--agent claude` · `--force` · `--all-a
 
 ---
 
-## Try in 30 seconds
+## Start in any coding agent (copy-paste)
+
+Paste this into Claude Code, Cursor, Codex, Grok, Gemini CLI, etc.:
+
+```text
+You now have Terminal Computer Use — desktop control via the shell (not vision/pixel clicking).
+
+## Bootstrap (run once if needed)
+1. Find the skill (first match wins):
+   - $TERMINAL_COMPUTER_USE_HOME
+   - ~/.agents/skills/computer
+   - ~/.claude/skills/computer
+   - ~/.grok/skills/computer
+   - ~/.cursor/skills/computer
+2. If SKILL.md is missing, install:
+   git clone --depth 1 https://github.com/vivekkartha/terminal-computer-use.git /tmp/terminal-computer-use
+   bash /tmp/terminal-computer-use/install.sh
+   Then re-check the paths above.
+3. Set SCRIPTS to <skill-root>/scripts
+4. Read <skill-root>/SKILL.md and follow it for this session.
+5. Run: bash "$SCRIPTS/doctor.sh" and fix any FAIL before bulk file ops.
+
+## How to work
+- Prefer library scripts under $SCRIPTS over one-off shell.
+- Mutating file ops: --dry-run first unless I said to just do it.
+- Honor TCU_SAFE_MODE=1 (forces dry-run on mutators).
+- Paths with spaces: quote them. Expand globs in the shell before calling scripts.
+- Never rm -rf bulk user data; use safe-trash.sh for deletes.
+- Refuse catastrophic targets ($HOME, /, system paths).
+- Report what you ran and what changed.
+
+## When I say /computer or "computer use"
+Treat the rest of the message as the task. Use the skill + scripts above. Be autonomous with safe defaults.
+
+Confirm bootstrap with one line: skill path + doctor summary (ok/warn/fail). Then do my task.
+```
+
+Full prompt + short variant + examples: **[docs/AGENT_PROMPT.md](docs/AGENT_PROMPT.md)**
+
+### Try in 30 seconds (CLI)
 
 ```bash
-# from a clone:
 ./demos/scripts/demo-organize.sh
-
 # or after install:
 S=~/.agents/skills/computer/scripts
 python3 "$S/fs-organize.py" --dry-run ~/Desktop
-```
-
-In your agent:
-
-```text
-/computer organize my desktop
-/computer open Slack and reveal ~/Downloads
 ```
 
 ---
