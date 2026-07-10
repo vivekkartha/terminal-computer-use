@@ -1,34 +1,43 @@
 # Security Policy
 
-## What this software can do
+## Threat model
 
-Terminal Computer Use is a skill + script library that lets AI coding agents
-operate your machine through the shell (open apps, move files, clipboard, etc.).
+Terminal Computer Use lets an AI coding agent run shell scripts that **move files,
+open/quit apps, and change clipboard state** on your machine.
 
-**That is powerful and inherently risky.** Only install and enable it in agents
-you trust, on machines you control.
+| Assume | Do not assume |
+|--------|----------------|
+| You trust the agent product and model you use | Untrusted paste-prompts are safe |
+| You review dry-runs for bulk file ops | The skill blocks all bad agent ideas |
+| You run as a normal user (not root) | Network isolation is provided |
+
+**You are giving a careful assistant shell access.** Only enable this skill in
+agents and accounts you control.
 
 ## Reporting vulnerabilities
 
-If you find a security issue (e.g. a script that can be tricked into deleting
-`$HOME`, path traversal, command injection):
+If a script can be tricked into deleting `$HOME`, path traversal, command injection,
+or similar:
 
 1. **Do not** open a public GitHub issue with exploit details.
-2. Email the maintainer via GitHub profile contact, or open a **private**
-   security advisory on the GitHub repository.
+2. Use a **private** GitHub security advisory on this repository, or contact the
+   maintainer via their GitHub profile.
 
-Please include: affected script, reproduction steps, and impact.
+Include: affected script, reproduction steps, impact, OS.
 
 ## Supported versions
 
 | Version | Supported |
 |---------|-----------|
-| 0.x     | ✅ best-effort |
+| 0.2.x   | ✅ |
+| 0.1.x   | best-effort |
+| &lt; 0.1 | no |
 
-## Hardening tips for users
+## Hardening tips
 
-- Prefer `./install.sh --dry-run` then install
-- Run `bash scripts/doctor.sh` after install
-- Use `--dry-run` on organize/move operations first
-- Set `TCU_SAFE_MODE=1` in sensitive environments
-- Do not run agent sessions as root
+- `./install.sh --dry-run` before install  
+- `bash …/scripts/doctor.sh` after install  
+- `--dry-run` on organize/move first  
+- `TCU_SAFE_MODE=1` in sensitive environments  
+- Never run agent sessions as root  
+- Prefer `safe-trash.sh` over `rm`  

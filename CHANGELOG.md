@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0] — 2026-07-11
+
+### Added
+- `tests/smoke_release.sh` — one-command release gate
+- `docs/TROUBLESHOOTING.md` — install, permissions, Linux, safety
+- `VERSION` file (0.2.0)
+- Installer: `--all-agents`, success/skip summary, exit 1 if nothing installed
+- Doctor: version, macOS Automation hint, Linux clipboard/trash hints, try-next commands
+
+### Changed
+- README: 30s try path, support matrix, CI badge, leaner structure
+- SECURITY.md: explicit threat model
+- CI runs smoke components on Ubuntu
+
 ## [0.1.1] — 2026-07-11
 
 ### Fixed

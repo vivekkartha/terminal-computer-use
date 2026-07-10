@@ -4,6 +4,7 @@
 
 Open apps, organize files, clipboard, notify, screenshots. Works with Claude Code, Cursor, Codex, Grok, Gemini CLI, and any agent that can run shell commands.
 
+[![CI](https://github.com/vivekkartha/terminal-computer-use/actions/workflows/ci.yml/badge.svg)](https://github.com/vivekkartha/terminal-computer-use/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Agent Skills](https://img.shields.io/badge/Agent_Skills-compatible-blue)](https://skills.sh)
 
@@ -12,6 +13,8 @@ Open apps, organize files, clipboard, notify, screenshots. Works with Claude Cod
 | Screenshots + mouse | Shell + scripts |
 | Expensive, flaky UI | Fast, idempotent CLI |
 | Needs a display | Works over SSH |
+
+**Support:** macOS ✅ · Linux core ✅ · Windows ❌
 
 ---
 
@@ -26,36 +29,29 @@ Or:
 ```bash
 git clone https://github.com/vivekkartha/terminal-computer-use.git
 cd terminal-computer-use && ./install.sh
-```
-
-`./install.sh` copies the skill into agent dirs it finds (`~/.claude`, `~/.grok`, `~/.cursor`, `~/.agents`). Use `--dry-run`, `--symlink`, or `--agent claude` as needed.
-
-```bash
 bash ~/.agents/skills/computer/scripts/doctor.sh
 ```
 
+Options: `--dry-run` · `--symlink` · `--agent claude` · `--force` · `--all-agents`
+
 ---
 
-## Use
+## Try in 30 seconds
 
-**In your agent**
+```bash
+# from a clone:
+./demos/scripts/demo-organize.sh
+
+# or after install:
+S=~/.agents/skills/computer/scripts
+python3 "$S/fs-organize.py" --dry-run ~/Desktop
+```
+
+In your agent:
 
 ```text
 /computer organize my desktop
 /computer open Slack and reveal ~/Downloads
-/computer quit Spotify; notify me when done
-```
-
-**CLI**
-
-```bash
-S=~/.agents/skills/computer/scripts   # or ~/.grok / ~/.claude path
-
-python3 "$S/fs-organize.py" --dry-run ~/Desktop
-python3 "$S/fs-organize.py" ~/Desktop
-
-bash "$S/fs-move.sh" --dry-run ~/Desktop/"report final.pdf" ~/Documents/
-bash "$S/notify.sh" --title "Done" "Desktop organized"
 ```
 
 ---
@@ -64,33 +60,28 @@ bash "$S/notify.sh" --title "Done" "Desktop organized"
 
 | | |
 |--|--|
-| `fs-organize.py` | Smart / extension / date folders (`--by smart`) |
+| `fs-organize.py` | Smart / extension / date folders |
 | `fs-move.sh` `fs-copy.sh` | Move/copy · spaces OK · `--dry-run` |
-| `safe-trash.sh` | Trash only (no `rm -rf`) |
-| `open-target.sh` | App / file / URL |
-| `quit-app.sh` `app-activate.sh` | Quit / focus |
-| `list-apps.sh` `frontmost-app.sh` | Running / focused |
+| `safe-trash.sh` | Trash only |
+| `open-target.sh` `quit-app.sh` `app-activate.sh` | Open / quit / focus |
 | `clipboard.sh` `notify.sh` `screenshot.sh` | Clipboard, notify, capture |
 | `doctor.sh` | Health check |
-
-macOS is fully supported; Linux covers files, open/reveal, clipboard, notify (with desktop utils).
 
 ---
 
 ## Safety
 
-- Mutators support `--dry-run`; `TCU_SAFE_MODE=1` forces dry-run
-- Refuses `$HOME` / system paths; installer won’t clobber unmanaged dirs without `--force`
-- Details: [SECURITY.md](SECURITY.md)
+- Mutators support `--dry-run`; `TCU_SAFE_MODE=1` forces dry-run  
+- Refuses `$HOME` / system paths; installer skips unmanaged dirs unless `--force`  
+- [SECURITY.md](SECURITY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
 
 ---
 
-## Dev
+## Dev / release gate
 
 ```bash
 ./install.sh --symlink
-bash tests/test_scripts_help.sh && bash tests/test_fs_move.sh
-python3 tests/test_fs_smart_organize.py && bash tests/test_install_dry.sh
+bash tests/smoke_release.sh
 ```
 
 MIT © [Vivek Kartha](https://github.com/vivekkartha)

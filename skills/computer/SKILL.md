@@ -10,7 +10,7 @@ description: >
 metadata:
   short-description: "Terminal Computer Use (shell + scripts)"
   author: vivekkartha
-  version: "0.1.1"
+  version: "0.2.0"
 license: MIT
 compatibility: "Requires bash and python3. macOS full; Linux core (open/clipboard/notify/fs)."
 ---
