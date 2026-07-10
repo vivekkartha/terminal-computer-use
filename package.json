@@ -1,0 +1,29 @@
+{
+  "name": "terminal-computer-use",
+  "version": "0.1.0",
+  "description": "Computer Use for any coding agent — via the terminal, not pixel clicking",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vivekkartha/terminal-computer-use.git"
+  },
+  "keywords": [
+    "computer-use",
+    "agent-skills",
+    "claude-code",
+    "cursor",
+    "codex",
+    "grok",
+    "desktop-automation",
+    "terminal",
+    "skill"
+  ],
+  "author": "Vivek Kartha",
+  "files": [
+    "skills/",
+    "agents/",
+    "install.sh",
+    "README.md",
+    "LICENSE"
+  ]
+}
