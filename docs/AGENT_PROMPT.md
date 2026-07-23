@@ -27,18 +27,23 @@ Use Terminal Computer Use for desktop tasks in this session: control files, apps
 ## Working rules
 - Prefer scripts under $SCRIPTS over one-off shell.
 - For bulk file changes: --dry-run first unless the user explicitly asked to apply immediately.
-- Honor TCU_SAFE_MODE=1 (forces dry-run on mutators).
+- Honor TCU_SAFE_MODE=1 (forces dry-run on mutators: move/copy/trash/organize).
 - Quote paths that contain spaces; expand globs in the shell before calling scripts.
 - Do not bulk rm -rf user data; use safe-trash.sh for deletes.
 - Refuse catastrophic targets ($HOME, /, system paths).
 - macOS app control may need Accessibility/Automation for the terminal app.
 - Say what you ran and what changed.
+- Goal-first observation: use structured checks (paths, apps, clipboard, dry-run plans, doctor)
+  before screenshots. Use screenshot.sh only when the goal needs visual/UI state those cannot
+  provide — never screenshot first for file/app/clipboard tasks.
 
 ## Useful commands
 SCRIPTS=<skill-root>/scripts
 bash "$SCRIPTS/doctor.sh"
 python3 "$SCRIPTS/fs-organize.py" --dry-run ~/Desktop
-python3 "$SCRIPTS/fs-organize.py" ~/Desktop
+python3 "$SCRIPTS/fs-organize.py" --apply          # run last plan
+python3 "$SCRIPTS/fs-organize.py" --undo           # reverse last apply
+python3 "$SCRIPTS/fs-organize.py" ~/Desktop        # execute + record plan
 bash "$SCRIPTS/fs-move.sh" --dry-run <src> <dest>
 bash "$SCRIPTS/open-target.sh" <app-or-path-or-url>
 bash "$SCRIPTS/notify.sh" --title TCU "done"
@@ -56,7 +61,7 @@ Reply with one line confirming skill path + doctor result (ok/warn/fail), then d
 ## Short variant (skill already installed)
 
 ```text
-Use Terminal Computer Use: read SKILL.md under ~/.agents/skills/computer (or ~/.claude / ~/.grok / ~/.cursor), set SCRIPTS to its scripts/ directory, run doctor if needed, then handle my request with those scripts. Dry-run bulk file ops first. Prefer library scripts over ad-hoc shell.
+Use Terminal Computer Use: read SKILL.md under ~/.agents/skills/computer (or ~/.claude / ~/.grok / ~/.cursor), set SCRIPTS to its scripts/ directory, run doctor if needed, then handle my request with those scripts. Dry-run bulk file ops first. Prefer library scripts over ad-hoc shell. Prefer structured verification over screenshots unless the goal needs visual/UI state.
 
 Task: <describe what you want>
 ```

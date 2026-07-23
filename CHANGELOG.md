@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- `fs-organize.py` plan / apply / undo: dry-run and execute write `~/.tcu/last-organize-plan.json`; `--apply` / `--undo`
+
+### Fixed
+- `fs-organize.py` honors `TCU_SAFE_MODE=1` (forces dry-run), matching move/copy/trash; SAFE_MODE blocks apply/undo
+
+### Changed
+- Skill + agent prompt: goal-first observation — structured checks before screenshots
+- Safety docs aligned: `TCU_SAFE_MODE` applies to organize and other mutators
+
 ## [0.2.1] — 2026-07-11
 
 ### Changed

@@ -55,17 +55,27 @@ If you only know the install locations, try in order:
 4. **Confirm** before bulk delete, overwrite, or externally visible sends.
 5. **Absolute paths**, quote spaces, never `rm -rf` without an explicit approved target list.
 6. **Idempotent when possible**. Report what you did.
+7. **Observe only as needed for the goal.** Prefer structured OS/CLI state over screenshots.
 
 ## Decision tree
 
 ```
-User request
+User request / goal
   ├─ Covered by scripts/* ? → run that script with flags
   ├─ Simple one-liner? → shell directly
   ├─ Needs OS automation (apps/Finder)? → platform-aware scripts / osascript on macOS
   ├─ Structured multi-file logic? → Python 3
   └─ Will be reused? → add script under scripts/, then run it
+
+How to verify (cheapest sufficient signal):
+  1. Structured checks — paths, processes, clipboard, dry-run plans, doctor
+  2. Script/CLI that reads system state directly
+  3. screenshot.sh ONLY if the goal depends on visual/UI state those cannot provide
+     (never screenshot "to be safe" before file/app/clipboard work)
 ```
+
+Terminal Computer Use wins by using the control plane (files, apps, clipboard, processes).
+Screenshots are an escape hatch for UI-native goals — not the default observe loop.
 
 ## Running scripts
 
@@ -76,7 +86,8 @@ python3 "${SCRIPTS}/<name>.py" [args]
 ```
 
 Every script supports `-h` / `--help`. Destructive scripts support `--dry-run`.
-Set `TCU_SAFE_MODE=1` to prefer dry-run behavior for mutating flows.
+Set `TCU_SAFE_MODE=1` to force dry-run on mutators (`fs-move`, `fs-copy`, `safe-trash`,
+`fs-organize`).
 
 ## Capability map
 
@@ -91,6 +102,7 @@ Set `TCU_SAFE_MODE=1` to prefer dry-run behavior for mutating flows.
 | Reveal in file manager | `scripts/reveal-in-finder.sh` |
 | Safe move / copy | `scripts/fs-move.sh`, `scripts/fs-copy.sh` |
 | Organize (smart / extension / date) | `scripts/fs-organize.py` (`--by smart` default) |
+| Organize plan / apply / undo | `fs-organize.py --dry-run DIR` → `--apply` → `--undo` (plan in `~/.tcu/`) |
 | Smart organize (shim) | `scripts/fs-smart-organize.py` → `--by smart` |
 | Safe trash | `scripts/safe-trash.sh` |
 | Clipboard | `scripts/clipboard.sh` |
@@ -118,6 +130,8 @@ See `references/safety.md`, `references/macos-cli.md`, `references/linux-cli.md`
 - Quit apps gracefully; avoid `kill -9` unless hung + requested.
 - Network/message sends need explicit user intent.
 - Bulk file ops: dry-run first unless the user asked to apply immediately.
+- `TCU_SAFE_MODE=1` forces dry-run on mutators even if `--dry-run` was omitted; blocks organize `--apply` / `--undo`.
+- After a bad organize: `python3 "$SCRIPTS/fs-organize.py" --undo` (last plan under `~/.tcu/`).
 
 ## Platform support
 

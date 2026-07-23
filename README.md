@@ -60,7 +60,7 @@ python3 "$S/fs-organize.py" --dry-run ~/Desktop
 
 | Script | Purpose |
 |--------|---------|
-| `fs-organize.py` | Sort files by smart categories, extension, or date |
+| `fs-organize.py` | Sort by smart/extension/date; `--dry-run` / `--apply` / `--undo` (plan in `~/.tcu/`) |
 | `fs-move.sh` / `fs-copy.sh` | Move/copy (supports spaces; `--dry-run`) |
 | `safe-trash.sh` | Move to Trash (not `rm -rf`) |
 | `open-target.sh` | Open app, file, folder, or URL |
@@ -73,9 +73,11 @@ python3 "$S/fs-organize.py" --dry-run ~/Desktop
 
 ## Safety
 
-- File changes support `--dry-run`; set `TCU_SAFE_MODE=1` to force dry-run on mutators
+- File changes support `--dry-run`; set `TCU_SAFE_MODE=1` to force dry-run on mutators (move, copy, trash, organize)
+- Organize records a plan under `~/.tcu/`; reverse with `fs-organize.py --undo`
 - Avoids deleting `$HOME` / system paths; installer will not overwrite unmanaged skill dirs without `--force`
 - No analytics or telemetry in the scripts or installer
+- Prefer structured checks over screenshots; capture the screen only when the goal needs visual/UI state
 - This **can** move files and control apps — treat it like shell access you granted the agent
 
 Details: [SECURITY.md](SECURITY.md) · [docs/TRUST.md](docs/TRUST.md) · [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)

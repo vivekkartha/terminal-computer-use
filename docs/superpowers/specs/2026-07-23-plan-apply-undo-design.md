@@ -1,6 +1,6 @@
 # Design: Plan / Apply / Undo for bulk file ops
 
-**Status:** draft for review  
+**Status:** implemented (organize v1)  
 **Date:** 2026-07-23  
 **Repo:** terminal-computer-use  
 **Goal:** Users (and agents) can reverse bulk Desktop/Downloads changes so computer-use stays trusted after the first scary organize.

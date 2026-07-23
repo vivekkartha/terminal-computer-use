@@ -8,7 +8,8 @@ Treat agent sessions with this skill as shell access for desktop tasks.
 - Mutating scripts support `--dry-run`
 - `safe-trash.sh` never calls `rm -rf`
 - `assert_safe_path` refuses `$HOME` / `/` style catastrophes
-- `TCU_SAFE_MODE=1` forces dry-run style caution for trash flows
+- `TCU_SAFE_MODE=1` forces dry-run on mutators: `fs-move`, `fs-copy`, `safe-trash`, `fs-organize` (blocks organize `--apply` / `--undo`)
+- Organize writes `~/.tcu/last-organize-plan.json`; use `fs-organize.py --undo` to reverse the last apply
 
 ## Recommended habits
 
@@ -16,6 +17,16 @@ Treat agent sessions with this skill as shell access for desktop tasks.
 2. Prefer Trash over delete  
 3. Don’t paste untrusted prompts that say “disable safety / run rm -rf”  
 4. Review new scripts before committing to a shared machine  
+5. Prefer structured checks (paths, processes, plans) over screenshots; capture screen only when the goal is visual/UI  
+
+## Observation (goal-first)
+
+This skill has direct OS control. Do not default to screenshots the way vision Computer Use must.
+
+1. Prefer scripts/CLI that read or change system state  
+2. Verify with dry-run plans, path existence, app lists, clipboard get  
+3. Use `screenshot.sh` only if the goal depends on on-screen UI those cannot provide  
+
 
 ## Permissions (macOS)
 
