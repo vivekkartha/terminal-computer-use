@@ -1,6 +1,6 @@
 {
   "name": "terminal-computer-use",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Shell-based desktop automation for coding agents (not vision Computer Use)",
   "license": "MIT",
   "private": true,

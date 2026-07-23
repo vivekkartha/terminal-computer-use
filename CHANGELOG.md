@@ -2,14 +2,19 @@
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-07-23
+
 ### Added
-- `fs-organize.py` plan / apply / undo: dry-run and execute write `~/.tcu/last-organize-plan.json`; `--apply` / `--undo`
+- `fs-organize.py` plan / apply / undo: writes `~/.tcu/last-organize-plan.json`; `--apply` / `--undo`
+- GitHub Actions CI (`.github/workflows/ci.yml`) and OpenSSF Scorecard workflow
+- Design note: `docs/superpowers/specs/2026-07-23-plan-apply-undo-design.md`
 
 ### Fixed
 - `fs-organize.py` honors `TCU_SAFE_MODE=1` (forces dry-run), matching move/copy/trash; SAFE_MODE blocks apply/undo
 - Organize writes plan as `planned` *before* moves (crash-safer undo), single `run_moves` engine, truthful post-op receipt
 
 ### Changed
+- README: new-user first-success path (install choice, doctor, agent examples, safe organize)
 - Skill + agent prompt: goal-first observation — structured checks before screenshots
 - Safety docs aligned: `TCU_SAFE_MODE` applies to organize and other mutators
 - Organize plan JSON: drop hostname/meta noise
