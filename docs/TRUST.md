@@ -28,8 +28,7 @@ By design, this skill can **move files and control apps**. Treat it as shell acc
 | SECURITY.md + threat model | Yes |
 | Private vulnerability reporting | Yes ([report](https://github.com/vivekkartha/terminal-computer-use/security/advisories/new)) |
 | Dependabot config | Yes (`.github/dependabot.yml`) |
-| Automated tests (`tests/`) | Yes |
-| GitHub Actions CI | Yes (`.github/workflows/ci.yml`) |
+| Automated tests (`tests/`) | Yes (`tests/smoke_release.sh`, local + contributor) |
 | Versioned GitHub Releases + CHANGELOG | Yes |
 | Secret scanning (GitHub) | Yes on public repo settings |
 
