@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- GitHub Actions CI (`.github/workflows/ci.yml`) and OpenSSF Scorecard workflow
+
 ## [0.3.0] — 2026-07-23
 
 ### Added
