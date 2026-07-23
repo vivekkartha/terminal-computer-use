@@ -71,6 +71,8 @@ def main() -> int:
         assert (root / ".localized").exists()
         plan = json.loads(plan_path.read_text())
         assert plan["status"] == "applied"
+        assert "meta" not in plan  # keep plan lean
+        assert "hostname" not in plan
 
         # undo restores
         und = run(["--undo"], env=env_state)
@@ -79,9 +81,6 @@ def main() -> int:
         assert not (root / "Images" / "receipt.jpg").exists()
         plan = json.loads(plan_path.read_text())
         assert plan["status"] == "undone"
-
-        # re-execute for later tests isolation
-        # (files are flat again)
 
         # shim
         with tempfile.TemporaryDirectory(prefix="tcu-shim-") as td2:

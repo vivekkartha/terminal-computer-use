@@ -12,9 +12,8 @@ strategies:
   date       YYYY-MM from mtime
 
 Plan/apply/undo:
-  Scan (with or without --dry-run) writes ~/.tcu/last-organize-plan.json
-  --apply  executes moves from a plan file (default: last plan)
-  --undo   reverses an applied plan
+  Scan writes ~/.tcu/last-organize-plan.json as status=planned *before* any moves,
+  then applies and updates status. --apply / --undo use that plan (or PATH).
 
 Respects TCU_SAFE_MODE=1 (forces dry-run on scan; blocks --apply/--undo).
 """
@@ -25,16 +24,18 @@ import json
 import os
 import re
 import shutil
-import socket
 import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
-
+from typing import Any, Literal
 
 PLAN_VERSION = 1
 PLAN_KIND = "organize"
+Status = Literal["planned", "applied", "undone", "failed"]
+Move = tuple[Path, Path, str]  # from, to, category (category is display-only)
+Pair = tuple[Path, Path]
+Error = dict[str, str]
 
 
 def env_safe_mode() -> bool:
@@ -55,18 +56,6 @@ def state_dir() -> Path:
 
 def default_plan_path() -> Path:
     return state_dir() / "last-organize-plan.json"
-
-
-def read_tool_version() -> str:
-    here = Path(__file__).resolve()
-    for candidate in (
-        here.parents[3] / "VERSION",  # repo root when scripts under skills/computer/scripts
-        here.parents[2] / "VERSION",
-        here.parents[1] / "VERSION",
-    ):
-        if candidate.is_file():
-            return candidate.read_text(encoding="utf-8").strip()
-    return "unknown"
 
 
 SKIP_NAMES = {
@@ -98,11 +87,6 @@ CODE_EXT = {
 }
 VIDEO_EXT = {".mp4", ".mov", ".m4v", ".avi", ".mkv", ".webm"}
 AUDIO_EXT = {".mp3", ".wav", ".m4a", ".aac", ".flac", ".aiff", ".ogg"}
-
-SMART_CATEGORY_DIRS = {
-    "Screenshots", "Images", "Documents", "Archives",
-    "Videos", "Audio", "Code", "Misc",
-}
 
 
 def smart_category(path: Path) -> str | None:
@@ -241,30 +225,31 @@ def group_for(path: Path, by: str) -> str | None:
     return None
 
 
+# --- plan I/O -----------------------------------------------------------------
+
+
 def resolve_plan_arg(value: str | None) -> Path:
     if value is None or value == "__default__":
         return default_plan_path()
     return Path(value).expanduser().resolve()
 
 
-def ensure_state_dir(path: Path) -> None:
-    d = path.parent
-    d.mkdir(mode=0o700, parents=True, exist_ok=True)
-    try:
-        os.chmod(d, 0o700)
-    except OSError:
-        pass
+def plan_write_paths(default: Path, extra: Path | None) -> list[Path]:
+    paths = [default]
+    if extra is not None and extra != default:
+        paths.append(extra)
+    return paths
 
 
-def save_plan(plan: dict[str, Any], *paths: Path) -> None:
-    text = json.dumps(plan, indent=2, sort_keys=False) + "\n"
-    written: set[Path] = set()
+def save_plan(plan: dict[str, Any], paths: list[Path]) -> None:
+    text = json.dumps(plan, indent=2) + "\n"
     for path in paths:
-        if path in written:
-            continue
-        ensure_state_dir(path)
+        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        try:
+            os.chmod(path.parent, 0o700)
+        except OSError:
+            pass
         path.write_text(text, encoding="utf-8")
-        written.add(path)
 
 
 def load_plan(path: Path) -> dict[str, Any]:
@@ -284,14 +269,14 @@ def load_plan(path: Path) -> dict[str, Any]:
     return data
 
 
-def build_plan_doc(
+def build_plan(
     *,
     by: str,
     source: Path,
     dest_root: Path,
-    moves: list[tuple[Path, Path, str]],
-    status: str,
-    errors: list[dict[str, str]] | None = None,
+    moves: list[Move],
+    status: Status,
+    errors: list[Error] | None = None,
 ) -> dict[str, Any]:
     doc: dict[str, Any] = {
         "version": PLAN_VERSION,
@@ -305,14 +290,78 @@ def build_plan_doc(
             {"from": str(src), "to": str(dst), "category": cat}
             for src, dst, cat in moves
         ],
-        "meta": {
-            "hostname": socket.gethostname(),
-            "tool_version": read_tool_version(),
-        },
     }
     if errors:
         doc["errors"] = errors
     return doc
+
+
+def moves_from_plan(data: dict[str, Any]) -> list[Move]:
+    out: list[Move] = []
+    for m in data["moves"]:
+        if not isinstance(m, dict):
+            raise ValueError("each move must be an object")
+        out.append((Path(m["from"]), Path(m["to"]), str(m.get("category") or "")))
+    return out
+
+
+def set_plan_status(
+    data: dict[str, Any],
+    status: Status,
+    paths: list[Path],
+    errors: list[Error] | None = None,
+) -> None:
+    data["status"] = status
+    if errors:
+        data["errors"] = errors
+    else:
+        data.pop("errors", None)
+    save_plan(data, paths)
+
+
+# --- move engine --------------------------------------------------------------
+
+
+def run_moves(pairs: list[Pair]) -> list[Error]:
+    """Move each src→dst. Idempotent if already at dst. Never overwrites."""
+    errors: list[Error] = []
+    for src, dst in pairs:
+        src_e = src.exists()
+        dst_e = dst.exists()
+        if not src_e and dst_e:
+            continue  # already applied
+        if src_e and not dst_e:
+            try:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(src), str(dst))
+            except OSError as e:
+                errors.append({"from": str(src), "to": str(dst), "reason": str(e)})
+            continue
+        if not src_e and not dst_e:
+            errors.append(
+                {"from": str(src), "to": str(dst), "reason": "source and dest missing"}
+            )
+            continue
+        # both exist
+        try:
+            if src.resolve() == dst.resolve():
+                continue
+        except OSError:
+            pass
+        errors.append(
+            {
+                "from": str(src),
+                "to": str(dst),
+                "reason": "dest exists (refusing overwrite)",
+            }
+        )
+    return errors
+
+
+def print_errors(errors: list[Error], label: str) -> None:
+    print(f"\nerror: {len(errors)} {label} failed", file=sys.stderr)
+    for err in errors:
+        print(f"  {err['from']} → {err['to']}: {err['reason']}", file=sys.stderr)
 
 
 def print_receipt(
@@ -332,7 +381,8 @@ def print_receipt(
     print(f"dest:   {dest_root}")
     print(f"by:     {by}")
     print(f"mode:   {mode}")
-    print(f"plan:   {n_moves} move(s)" + (f"  skipped: {len(skipped)}" if skipped else ""))
+    extra = f"  skipped: {len(skipped)}" if skipped else ""
+    print(f"plan:   {n_moves} move(s){extra}")
     print(f"status: {status}")
     print(f"plan_file: {plan_file}")
     if by_cat:
@@ -347,92 +397,16 @@ def print_receipt(
             print(f"  {name}  ({reason})")
 
 
-def execute_moves(
-    moves: list[tuple[Path, Path, str]],
-) -> list[dict[str, str]]:
-    """Apply from→to. Returns list of error dicts (empty if all ok)."""
-    errors: list[dict[str, str]] = []
-    for src, dst, _cat in moves:
-        src_e = src.exists()
-        dst_e = dst.exists()
-        if not src_e and dst_e:
-            # already applied
-            continue
-        if not src_e and not dst_e:
-            errors.append(
-                {"from": str(src), "to": str(dst), "reason": "source and dest missing"}
-            )
-            continue
-        if src_e and dst_e:
-            try:
-                if src.resolve() == dst.resolve():
-                    continue
-            except OSError:
-                pass
-            errors.append(
-                {
-                    "from": str(src),
-                    "to": str(dst),
-                    "reason": "dest exists (refusing overwrite)",
-                }
-            )
-            continue
-        try:
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(src), str(dst))
-        except OSError as e:
-            errors.append({"from": str(src), "to": str(dst), "reason": str(e)})
-    return errors
+def move_lines(moves: list[Move], *, reverse: bool = False) -> list[str]:
+    seq = reversed(moves) if reverse else moves
+    lines: list[str] = []
+    for src, dst, cat in seq:
+        a, b = (dst, src) if reverse else (src, dst)
+        lines.append(f"  [{cat}] {a.name}  →  {b}")
+    return lines
 
 
-def execute_undo(
-    moves: list[tuple[Path, Path, str]],
-) -> list[dict[str, str]]:
-    """Reverse to→from. Returns error dicts."""
-    errors: list[dict[str, str]] = []
-    for src, dst, _cat in reversed(moves):
-        src_e = src.exists()
-        dst_e = dst.exists()
-        if dst_e and not src_e:
-            try:
-                src.parent.mkdir(parents=True, exist_ok=True)
-                shutil.move(str(dst), str(src))
-            except OSError as e:
-                errors.append({"from": str(dst), "to": str(src), "reason": str(e)})
-            continue
-        if src_e and not dst_e:
-            # already undone
-            continue
-        if not src_e and not dst_e:
-            errors.append(
-                {
-                    "from": str(dst),
-                    "to": str(src),
-                    "reason": "both paths missing (cannot undo)",
-                }
-            )
-            continue
-        if src_e and dst_e:
-            errors.append(
-                {
-                    "from": str(dst),
-                    "to": str(src),
-                    "reason": "both paths exist (refusing overwrite)",
-                }
-            )
-    return errors
-
-
-def moves_from_plan(data: dict[str, Any]) -> list[tuple[Path, Path, str]]:
-    out: list[tuple[Path, Path, str]] = []
-    for m in data["moves"]:
-        if not isinstance(m, dict):
-            raise ValueError("each move must be an object")
-        frm = Path(m["from"])
-        to = Path(m["to"])
-        cat = str(m.get("category") or "")
-        out.append((frm, to, cat))
-    return out
+# --- commands -----------------------------------------------------------------
 
 
 def cmd_apply(plan_path: Path) -> int:
@@ -441,41 +415,43 @@ def cmd_apply(plan_path: Path) -> int:
         return 1
     try:
         data = load_plan(plan_path)
-    except (OSError, ValueError, json.JSONDecodeError, FileNotFoundError) as e:
+        moves = moves_from_plan(data)
+    except (OSError, ValueError, json.JSONDecodeError, FileNotFoundError, KeyError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
 
-    moves = moves_from_plan(data)
+    paths = [plan_path]
+    if not moves:
+        print_receipt(
+            source=str(data.get("source", "")),
+            dest_root=str(data.get("dest_root", "")),
+            by=str(data.get("by", "")),
+            mode="APPLY",
+            n_moves=0,
+            status=str(data.get("status", "")),
+            plan_file=plan_path,
+        )
+        print("nothing to do")
+        return 0
+
+    errors = run_moves([(src, dst) for src, dst, _ in moves])
+    status: Status = "failed" if errors else "applied"
+    set_plan_status(data, status, paths, errors if errors else None)
+
     print_receipt(
         source=str(data.get("source", "")),
         dest_root=str(data.get("dest_root", "")),
         by=str(data.get("by", "")),
         mode="APPLY",
         n_moves=len(moves),
-        status=str(data.get("status", "")),
+        status=status,
         plan_file=plan_path,
-        lines=[f"  [{cat}] {src.name}  →  {dst}" for src, dst, cat in moves],
+        lines=move_lines(moves),
     )
-
-    if not moves:
-        print("nothing to do")
-        return 0
-
-    errors = execute_moves(moves)
     if errors:
-        data["status"] = "failed"
-        data["errors"] = errors
-        save_plan(data, plan_path)
-        print(f"\nerror: {len(errors)} move(s) failed", file=sys.stderr)
-        for err in errors:
-            print(f"  {err['from']} → {err['to']}: {err['reason']}", file=sys.stderr)
+        print_errors(errors, "move(s)")
         return 1
-
-    data["status"] = "applied"
-    data.pop("errors", None)
-    save_plan(data, plan_path)
     print(f"\napplied {len(moves)} move(s)")
-    print(f"status: applied")
     return 0
 
 
@@ -485,50 +461,87 @@ def cmd_undo(plan_path: Path) -> int:
         return 1
     try:
         data = load_plan(plan_path)
-    except (OSError, ValueError, json.JSONDecodeError, FileNotFoundError) as e:
+        moves = moves_from_plan(data)
+    except (OSError, ValueError, json.JSONDecodeError, FileNotFoundError, KeyError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
 
-    status = data.get("status")
-    if status not in ("applied", "failed"):
+    status_in = data.get("status")
+    if status_in not in ("applied", "failed"):
         print(
-            f"error: cannot undo plan with status={status!r} (need applied or failed)",
+            f"error: cannot undo plan with status={status_in!r} (need applied or failed)",
             file=sys.stderr,
         )
         return 1
 
-    moves = moves_from_plan(data)
+    paths = [plan_path]
+    if not moves:
+        print_receipt(
+            source=str(data.get("source", "")),
+            dest_root=str(data.get("dest_root", "")),
+            by=str(data.get("by", "")),
+            mode="UNDO",
+            n_moves=0,
+            status=str(status_in),
+            plan_file=plan_path,
+        )
+        print("nothing to do")
+        return 0
+
+    # reverse order, swap endpoints
+    pairs: list[Pair] = [(dst, src) for src, dst, _ in reversed(moves)]
+    errors = run_moves(pairs)
+    status: Status = "failed" if errors else "undone"
+    set_plan_status(data, status, paths, errors if errors else None)
+
     print_receipt(
         source=str(data.get("source", "")),
         dest_root=str(data.get("dest_root", "")),
         by=str(data.get("by", "")),
         mode="UNDO",
         n_moves=len(moves),
-        status=str(status),
+        status=status,
         plan_file=plan_path,
-        lines=[f"  [{cat}] {dst.name}  →  {src}" for src, dst, cat in reversed(moves)],
+        lines=move_lines(moves, reverse=True),
     )
-
-    if not moves:
-        print("nothing to do")
-        return 0
-
-    errors = execute_undo(moves)
     if errors:
-        data["status"] = "failed"
-        data["errors"] = errors
-        save_plan(data, plan_path)
-        print(f"\nerror: {len(errors)} undo(s) failed", file=sys.stderr)
-        for err in errors:
-            print(f"  {err['from']} → {err['to']}: {err['reason']}", file=sys.stderr)
+        print_errors(errors, "undo(s)")
         return 1
-
-    data["status"] = "undone"
-    data.pop("errors", None)
-    save_plan(data, plan_path)
     print(f"\nundid {len(moves)} move(s)")
-    print("status: undone")
     return 0
+
+
+def build_scan_moves(
+    source: Path,
+    dest_root: Path,
+    by: str,
+    include_hidden: bool,
+    into_existing_only: bool,
+) -> tuple[list[Move], list[tuple[str, str]]]:
+    files = collect_files(source, by, include_hidden)
+    moves: list[Move] = []
+    planned: set[Path] = set()
+    skipped: list[tuple[str, str]] = []
+
+    for p in sorted(source.iterdir(), key=lambda x: x.name.lower()):
+        if p.is_dir() and by == "smart":
+            skipped.append((p.name + "/", "existing folder (left alone)"))
+
+    for f in files:
+        key = group_for(f, by)
+        if key is None:
+            skipped.append((f.name, "no category"))
+            continue
+        cat_dir = dest_root / key
+        if into_existing_only and not cat_dir.is_dir():
+            skipped.append((f.name, f"category {key} missing"))
+            continue
+        dest = unique_dest(cat_dir / f.name, planned)
+        if dest.resolve() == f.resolve():
+            continue
+        planned.add(dest)
+        moves.append((f, dest, key))
+    return moves, skipped
 
 
 def cmd_scan(args: argparse.Namespace) -> int:
@@ -538,7 +551,10 @@ def cmd_scan(args: argparse.Namespace) -> int:
         dry_run = True
 
     if args.source is None:
-        print("error: source directory required (or use --apply / --undo)", file=sys.stderr)
+        print(
+            "error: source directory required (or use --apply / --undo)",
+            file=sys.stderr,
+        )
         return 1
 
     source = args.source.expanduser().resolve()
@@ -552,125 +568,83 @@ def cmd_scan(args: argparse.Namespace) -> int:
         return 1
 
     dest_root = args.dest.expanduser().resolve() if args.dest else source
-
-    files = collect_files(source, args.by, args.include_hidden)
-    plan: list[tuple[Path, Path, str]] = []
-    planned: set[Path] = set()
-    skipped: list[tuple[str, str]] = []
-
-    for p in sorted(source.iterdir(), key=lambda x: x.name.lower()):
-        if p.is_dir() and args.by == "smart":
-            skipped.append((p.name + "/", "existing folder (left alone)"))
-
-    for f in files:
-        key = group_for(f, args.by)
-        if key is None:
-            skipped.append((f.name, "no category"))
-            continue
-        cat_dir = dest_root / key
-        if args.into_existing_only and not cat_dir.is_dir():
-            skipped.append((f.name, f"category {key} missing"))
-            continue
-        dest = unique_dest(cat_dir / f.name, planned)
-        if dest.resolve() == f.resolve():
-            continue
-        planned.add(dest)
-        plan.append((f, dest, key))
-
-    by_cat: dict[str, int] = defaultdict(int)
-    for _, _, c in plan:
-        by_cat[c] += 1
+    moves, skipped = build_scan_moves(
+        source,
+        dest_root,
+        args.by,
+        args.include_hidden,
+        args.into_existing_only,
+    )
 
     default_path = default_plan_path()
-    extra_plan = args.plan.expanduser().resolve() if args.plan else None
-    mode = "DRY-RUN" if dry_run else "EXECUTE"
-    status = "planned" if dry_run else ("applied" if plan else "planned")
+    extra = args.plan.expanduser().resolve() if args.plan else None
+    paths = plan_write_paths(default_path, extra)
 
-    lines = []
-    for src, dst, cat in plan:
-        try:
-            rel = dst.relative_to(dest_root)
-        except ValueError:
-            rel = dst
-        lines.append(f"  [{cat}] {src.name}  →  {rel}")
+    by_cat: dict[str, int] = defaultdict(int)
+    for _, _, c in moves:
+        by_cat[c] += 1
+
+    # Always persist planned first so a crash mid-move still has an undo map.
+    doc = build_plan(
+        by=args.by,
+        source=source,
+        dest_root=dest_root,
+        moves=moves,
+        status="planned",
+    )
+    save_plan(doc, paths)
+
+    if not moves:
+        print_receipt(
+            source=str(source),
+            dest_root=str(dest_root),
+            by=args.by,
+            mode="DRY-RUN" if dry_run else "EXECUTE",
+            n_moves=0,
+            status="planned",
+            plan_file=default_path,
+            skipped=skipped,
+        )
+        print("nothing to do")
+        return 0
+
+    if dry_run:
+        print_receipt(
+            source=str(source),
+            dest_root=str(dest_root),
+            by=args.by,
+            mode="DRY-RUN",
+            n_moves=len(moves),
+            status="planned",
+            plan_file=default_path,
+            by_cat=dict(by_cat),
+            lines=move_lines(moves),
+            skipped=skipped,
+        )
+        print(f"\n[dry-run] would move {len(moves)} file(s)")
+        print(f"plan written: {default_path}")
+        return 0
+
+    errors = run_moves([(src, dst) for src, dst, _ in moves])
+    status: Status = "failed" if errors else "applied"
+    set_plan_status(doc, status, paths, errors if errors else None)
 
     print_receipt(
         source=str(source),
         dest_root=str(dest_root),
         by=args.by,
-        mode=mode,
-        n_moves=len(plan),
-        status=status if plan else "planned",
+        mode="EXECUTE",
+        n_moves=len(moves),
+        status=status,
         plan_file=default_path,
-        by_cat=dict(by_cat) if by_cat else None,
-        lines=lines or None,
+        by_cat=dict(by_cat),
+        lines=move_lines(moves),
         skipped=skipped,
     )
-
-    if not plan:
-        print("nothing to do")
-        # still write empty planned so agents know last op
-        doc = build_plan_doc(
-            by=args.by,
-            source=source,
-            dest_root=dest_root,
-            moves=[],
-            status="planned",
-        )
-        paths = [default_path]
-        if extra_plan:
-            paths.append(extra_plan)
-        save_plan(doc, *paths)
-        return 0
-
-    if dry_run:
-        doc = build_plan_doc(
-            by=args.by,
-            source=source,
-            dest_root=dest_root,
-            moves=plan,
-            status="planned",
-        )
-        paths = [default_path]
-        if extra_plan:
-            paths.append(extra_plan)
-        save_plan(doc, *paths)
-        print(f"\n[dry-run] would move {len(plan)} file(s)")
-        print(f"plan written: {default_path}")
-        return 0
-
-    errors = execute_moves(plan)
     if errors:
-        doc = build_plan_doc(
-            by=args.by,
-            source=source,
-            dest_root=dest_root,
-            moves=plan,
-            status="failed",
-            errors=errors,
-        )
-        paths = [default_path]
-        if extra_plan:
-            paths.append(extra_plan)
-        save_plan(doc, *paths)
-        print(f"\nerror: {len(errors)} move(s) failed", file=sys.stderr)
-        for err in errors:
-            print(f"  {err['from']} → {err['to']}: {err['reason']}", file=sys.stderr)
+        print_errors(errors, "move(s)")
         return 1
-
-    doc = build_plan_doc(
-        by=args.by,
-        source=source,
-        dest_root=dest_root,
-        moves=plan,
-        status="applied",
-    )
-    paths = [default_path]
-    if extra_plan:
-        paths.append(extra_plan)
-    save_plan(doc, *paths)
-    print(f"\nmoved {len(plan)} file(s)")
-    print(f"status: applied")
+    print(f"\nmoved {len(moves)} file(s)")
     print(f"plan written: {default_path}")
     print("undo: python3 fs-organize.py --undo")
     return 0
@@ -685,7 +659,10 @@ def main() -> int:
         print("error: use only one of --apply or --undo", file=sys.stderr)
         return 1
     if (apply_set or undo_set) and args.source is not None:
-        print("error: --apply/--undo cannot be combined with a source directory", file=sys.stderr)
+        print(
+            "error: --apply/--undo cannot be combined with a source directory",
+            file=sys.stderr,
+        )
         return 1
     if apply_set:
         return cmd_apply(resolve_plan_arg(args.apply))

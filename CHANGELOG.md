@@ -7,10 +7,12 @@
 
 ### Fixed
 - `fs-organize.py` honors `TCU_SAFE_MODE=1` (forces dry-run), matching move/copy/trash; SAFE_MODE blocks apply/undo
+- Organize writes plan as `planned` *before* moves (crash-safer undo), single `run_moves` engine, truthful post-op receipt
 
 ### Changed
 - Skill + agent prompt: goal-first observation — structured checks before screenshots
 - Safety docs aligned: `TCU_SAFE_MODE` applies to organize and other mutators
+- Organize plan JSON: drop hostname/meta noise
 
 ## [0.2.1] — 2026-07-11
 
