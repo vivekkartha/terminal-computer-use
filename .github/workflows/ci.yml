@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Script --help smoke tests
         run: bash tests/test_scripts_help.sh
