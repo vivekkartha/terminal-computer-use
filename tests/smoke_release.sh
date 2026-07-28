@@ -24,11 +24,25 @@ else
   bad "help"; cat /tmp/tcu-help.out
 fi
 
-step "medium-workflow capability surface (no browser click/publish)"
+step "medium-workflow capability surface (browser + gated publish)"
 if bash "${ROOT}/tests/test_medium_workflow_capability_surface.sh" >/tmp/tcu-cap.out 2>&1; then
   ok "capability surface"
 else
   bad "capability surface"; cat /tmp/tcu-cap.out
+fi
+
+step "browser policy unit tests"
+if python3 "${ROOT}/tests/test_browser_policy.py" >/tmp/tcu-bpol.out 2>&1; then
+  ok "browser policy"
+else
+  bad "browser policy"; cat /tmp/tcu-bpol.out
+fi
+
+step "browser smoke (skip if no playwright/chromium)"
+if python3 "${ROOT}/tests/test_browser_smoke.py" >/tmp/tcu-bsmoke.out 2>&1; then
+  ok "browser smoke"
+else
+  bad "browser smoke"; cat /tmp/tcu-bsmoke.out
 fi
 
 step "fs-move spaces + safe mode"

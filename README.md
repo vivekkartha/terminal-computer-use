@@ -2,16 +2,16 @@
 
 **Shell-based desktop automation for coding agents** — not Anthropic/OpenAI vision Computer Use, not pixel clicking.
 
-Give your agent a safe way to **organize files, open/quit apps, use the clipboard, and send notifications** via scripts. Fast, repeatable, works over SSH.
+Give your agent a safe way to **organize files, open/quit apps, use the clipboard, send notifications, and (optionally) drive pages via Playwright DOM** via scripts. Fast, repeatable, works over SSH.
 
 | Vision Computer Use | This project |
 |---------------------|--------------|
-| Screenshots + mouse | Shell + scripts |
+| Screenshots + mouse | Shell + scripts (+ optional Playwright selectors) |
 | Expensive, flaky UI | Fast, repeatable CLI |
-| Needs a display | Works over SSH |
+| Needs a display | Works over SSH (browser optional headed) |
 
 **For:** coding agents with shell access (Claude Code, Cursor, Codex, Grok, Gemini CLI, …)  
-**Not for:** arbitrary GUI clicking, filling web forms, or Windows (not supported)
+**Not for:** vision/pixel clicking, silent auto-publish, or Windows (not supported)
 
 **Platforms:** macOS (full) · Linux (files + common desktop tools) · Windows (not supported)
 
@@ -124,6 +124,8 @@ Cautious sessions: `TCU_SAFE_MODE=1` forces dry-run on mutators and blocks apply
 | List / frontmost app | `list-apps.sh` / `frontmost-app.sh` |
 | Clipboard / notification | `clipboard.sh` / `notify.sh` |
 | Screenshot (when UI state is required) | `screenshot.sh` |
+| Browser DOM click/fill (optional Playwright) | `browser.sh` |
+| Medium draft / gated publish | `browser.sh medium-draft` · `medium-publish --i-mean-it` |
 | Health check | `doctor.sh` |
 
 Scripts live under the installed skill’s `scripts/` directory (see `doctor`).

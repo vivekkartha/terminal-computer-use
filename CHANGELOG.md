@@ -2,9 +2,23 @@
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-07-29
+
 ### Added
+- **Browser DOM control** (optional Playwright): `browser.sh` + `lib/browser.py` / `browser_daemon.py` / `browser_policy.py`
+  - Session: `start` / `stop` / `status` (CDP, isolated profile under `~/.tcu/browser/`)
+  - Act: `open`, `click`, `fill`, `type`, `press`, `paste`, `wait`, `text`, `html`, `screenshot`, `copy`
+  - Medium: `medium-draft` (no publish) · `medium-publish --i-mean-it`
+  - Gates: `TCU_SAFE_MODE`, `TCU_BROWSER_ALLOWLIST`, publish requires `--i-mean-it`
+- `references/browser.md` Medium recipe + install notes
+- Tests: `test_browser_policy.py`, `test_browser_smoke.py`; capability surface asserts gated publish
+
+### Changed
+- SKILL/README/doctor: browser as optional capability; still not vision/pixel CU
+- Capability surface test: browser present with publish gate (was “no browser.sh”)
+
+### Added (earlier unreleased)
 - GitHub Actions CI (`.github/workflows/ci.yml`) and OpenSSF Scorecard workflow
-- `tests/test_medium_workflow_capability_surface.sh` — locks open-URL + clipboard surface; asserts no browser click/publish scripts (Medium E2E analysis baseline)
 
 ## [0.3.0] — 2026-07-23
 

@@ -36,8 +36,17 @@ Automation and screenshots may need:
 - **Automation** (control other apps via AppleScript)
 - **Screen Recording** (screenshots)
 
+## Browser control
+
+- Optional Playwright DOM (`browser.sh`) — selector click/fill, not vision pixels
+- `TCU_SAFE_MODE=1` blocks mutating browser actions
+- `TCU_BROWSER_ALLOWLIST` restricts `open` / medium hosts when set
+- `publish-click` / `medium-publish` require `--i-mean-it` (explicit publish intent)
+- Default profile is isolated under `~/.tcu/browser/profile` (not daily Chrome cookies)
+
 ## What this project will not add
 
 - Silent bulk permanent deletion helpers
 - Credential / keychain dumpers
 - Network exfiltration utilities disguised as “computer use”
+- Silent publish / checkout without `--i-mean-it`

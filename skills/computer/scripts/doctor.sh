@@ -123,10 +123,30 @@ else
   fail_ "SKILL.md missing at $SKILL_ROOT"
 fi
 
+if [[ -f "${SCRIPTS_DIR}/browser.sh" ]]; then
+  pass "browser.sh present"
+else
+  warn_ "browser.sh missing"
+fi
+
+echo
+echo "=== browser (optional Playwright) ==="
+if have python3 && python3 -c 'import playwright' 2>/dev/null; then
+  pass "playwright python package"
+  if python3 -c 'from playwright.sync_api import sync_playwright' 2>/dev/null; then
+    pass "playwright.sync_api import"
+  else
+    warn_ "playwright import broken"
+  fi
+else
+  warn_ "playwright not installed — browser.sh needs: python3 -m pip install playwright && python3 -m playwright install chromium"
+fi
+
 echo
 echo "=== try next ==="
 echo "  python3 \"${SCRIPTS_DIR}/fs-organize.py\" --dry-run \"\$(bash \"${SCRIPTS_DIR}/desktop-path.sh\")\""
 echo "  bash \"${SCRIPTS_DIR}/notify.sh\" --title TCU \"doctor ok\""
+echo "  bash \"${SCRIPTS_DIR}/browser.sh\" start --headed"
 echo "  /computer organize my desktop"
 echo
 if [[ "$warn" -gt 0 ]]; then

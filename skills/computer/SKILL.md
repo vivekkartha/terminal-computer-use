@@ -2,15 +2,16 @@
 name: computer
 description: >
   Terminal-first Computer Use: control files, folders, apps, clipboard,
-  notifications, screenshots, and multi-step desktop workflows via shell scripts
-  (bash/Python). Works with Claude Code, Cursor, Codex, Grok, Gemini CLI, and any
-  agent with a terminal. Reuse scripts next to this SKILL.md. Use when the user
-  wants computer use, desktop control, open/quit apps, organize files, Finder
-  automation, or runs /computer.
+  notifications, screenshots, optional Playwright browser DOM control
+  (click/fill/type; publish gated), and multi-step desktop workflows via shell
+  scripts (bash/Python). Works with Claude Code, Cursor, Codex, Grok, Gemini CLI,
+  and any agent with a terminal. Reuse scripts next to this SKILL.md. Use when the
+  user wants computer use, desktop control, open/quit apps, organize files, Finder
+  automation, browser form fill / Medium draft, or runs /computer.
 metadata:
   short-description: "Terminal Computer Use (shell + scripts)"
   author: vivekkartha
-  version: "0.3.0"
+  version: "0.4.0"
 license: MIT
 compatibility: "Requires bash and python3. macOS full; Linux core (open/clipboard/notify/fs)."
 ---
@@ -18,6 +19,7 @@ compatibility: "Requires bash and python3. macOS full; Linux core (open/clipboar
 # Terminal Computer Use
 
 Operate the machine through the **terminal**, not GUI pixel control / vision APIs.
+Browser work uses **Playwright DOM selectors** (`browser.sh`), not screenshots+mouse.
 Prefer reusable scripts in this skill’s `scripts/` directory; write new ones when a
 pattern will be reused.
 
@@ -62,19 +64,21 @@ If you only know the install locations, try in order:
 ```
 User request / goal
   ├─ Covered by scripts/* ? → run that script with flags
+  ├─ Web page open/read/click/fill/publish? → browser.sh (Playwright DOM)
+  ├─ Open URL in user’s normal browser only? → open-target.sh
   ├─ Simple one-liner? → shell directly
   ├─ Needs OS automation (apps/Finder)? → platform-aware scripts / osascript on macOS
   ├─ Structured multi-file logic? → Python 3
   └─ Will be reused? → add script under scripts/, then run it
 
 How to verify (cheapest sufficient signal):
-  1. Structured checks — paths, processes, clipboard, dry-run plans, doctor
-  2. Script/CLI that reads system state directly
-  3. screenshot.sh ONLY if the goal depends on visual/UI state those cannot provide
+  1. Structured checks — paths, processes, clipboard, browser status, dry-run plans, doctor
+  2. Script/CLI that reads system state directly (incl. browser.sh text/html/url)
+  3. screenshot.sh / browser screenshot ONLY if the goal depends on visual/UI state those cannot provide
      (never screenshot "to be safe" before file/app/clipboard work)
 ```
 
-Terminal Computer Use wins by using the control plane (files, apps, clipboard, processes).
+Terminal Computer Use wins by using the control plane (files, apps, clipboard, processes, DOM).
 Screenshots are an escape hatch for UI-native goals — not the default observe loop.
 
 ## Running scripts
@@ -87,7 +91,7 @@ python3 "${SCRIPTS}/<name>.py" [args]
 
 Every script supports `-h` / `--help`. Destructive scripts support `--dry-run`.
 Set `TCU_SAFE_MODE=1` to force dry-run on mutators (`fs-move`, `fs-copy`, `safe-trash`,
-`fs-organize`).
+`fs-organize`) and to block mutating browser actions (click/fill/type/publish).
 
 ## Capability map
 
@@ -97,6 +101,8 @@ Set `TCU_SAFE_MODE=1` to force dry-run on mutators (`fs-move`, `fs-copy`, `safe-
 | Tool inventory | `scripts/which-tools.sh` |
 | Desktop/Downloads path | `scripts/desktop-path.sh` |
 | Open app / file / URL | `scripts/open-target.sh` |
+| Browser DOM (click/fill/type) | `scripts/browser.sh` (optional Playwright) |
+| Medium draft / gated publish | `browser.sh medium-draft` / `medium-publish --i-mean-it` |
 | Quit / activate app | `scripts/quit-app.sh`, `scripts/app-activate.sh` |
 | List / frontmost app | `scripts/list-apps.sh`, `scripts/frontmost-app.sh` |
 | Reveal in file manager | `scripts/reveal-in-finder.sh` |
@@ -111,7 +117,7 @@ Set `TCU_SAFE_MODE=1` to force dry-run on mutators (`fs-move`, `fs-copy`, `safe-
 | Native path picker | `scripts/choose-path.sh` (macOS) |
 | AppleScript | `scripts/osascript-run.sh` (macOS) |
 
-See `references/safety.md`, `references/macos-cli.md`, `references/linux-cli.md`.
+See `references/safety.md`, `references/browser.md`, `references/macos-cli.md`, `references/linux-cli.md`.
 
 ## Writing new scripts
 
@@ -129,8 +135,9 @@ See `references/safety.md`, `references/macos-cli.md`, `references/linux-cli.md`
 - Prefer `safe-trash.sh` over `rm`.
 - Quit apps gracefully; avoid `kill -9` unless hung + requested.
 - Network/message sends need explicit user intent.
+- Browser publish (`publish-click`, `medium-publish`) requires `--i-mean-it`.
 - Bulk file ops: dry-run first unless the user asked to apply immediately.
-- `TCU_SAFE_MODE=1` forces dry-run on mutators even if `--dry-run` was omitted; blocks organize `--apply` / `--undo`.
+- `TCU_SAFE_MODE=1` forces dry-run on mutators even if `--dry-run` was omitted; blocks organize `--apply` / `--undo`; blocks browser mutations.
 - After a bad organize: `python3 "$SCRIPTS/fs-organize.py" --undo` (last plan under `~/.tcu/`).
 
 ## Platform support
@@ -142,6 +149,7 @@ See `references/safety.md`, `references/macos-cli.md`, `references/linux-cli.md`
 | Clipboard / notify | ✅ | ✅* | soon |
 | Apps (list/quit/activate) | ✅ | best-effort | soon |
 | Screenshots | ✅ | ✅* | soon |
+| Browser DOM (Playwright) | ✅ optional | ✅ optional | soon |
 
 \* Needs common desktop utilities (`xdg-open`, `notify-send`, `wl-copy`/`xclip`).
 
@@ -152,6 +160,7 @@ See `references/safety.md`, `references/macos-cli.md`, `references/linux-cli.md`
 /computer organize my desktop (smart categories, dry-run first)
 /computer quit Spotify; notify me when done
 /computer move PDFs on Desktop into ~/Documents/PDFs
+/computer browser start headed; medium-draft title "…" body-file ./draft.md
 ```
 
 ## After complex work

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Structural capability surface test for analysis claims:
-# TCU v0.3.x supports open URL + clipboard, not browser click/fill/publish.
+# Structural capability surface: open URL + clipboard + browser DOM (gated publish).
 # Drives real installed/repo scripts and README — fails if contract drifts.
 set -euo pipefail
 
@@ -26,37 +25,41 @@ clip_help="$(bash "${SCRIPTS}/clipboard.sh" --help 2>&1)" || true
 echo "$clip_help" | grep -qE 'get|set' || fail "clipboard.sh --help must document get/set"
 pass "clipboard.sh get/set present"
 
-# --- absences: no first-class browser automation ---
-[[ ! -f "${SCRIPTS}/browser.sh" ]] || fail "browser.sh must not exist in v0.3 analysis baseline (or update this test for 0.4+)"
-for name in playwright puppeteer selenium medium-publish; do
-  if find "$SCRIPTS" -maxdepth 2 -iname "*${name}*" | grep -q .; then
-    fail "unexpected browser/publish artifact matching *${name}* under scripts/"
-  fi
-done
-pass "no browser.sh / playwright / medium-publish scripts"
+# --- browser DOM (0.4+) ---
+[[ -f "${SCRIPTS}/browser.sh" ]] || fail "browser.sh missing"
+[[ -f "${SCRIPTS}/lib/browser.py" ]] || fail "lib/browser.py missing"
+[[ -f "${SCRIPTS}/lib/browser_policy.py" ]] || fail "lib/browser_policy.py missing"
+br_help="$(bash "${SCRIPTS}/browser.sh" --help 2>&1)" || true
+echo "$br_help" | grep -q 'medium-draft' || fail "browser.sh --help must document medium-draft"
+echo "$br_help" | grep -q 'medium-publish' || fail "browser.sh --help must document medium-publish"
+echo "$br_help" | grep -q 'i-mean-it' || fail "browser.sh --help must document --i-mean-it publish gate"
+pass "browser.sh present with medium draft/publish gate"
 
-# --- docs contract ---
-grep -q 'arbitrary GUI clicking' "$README" || fail "README must exclude arbitrary GUI clicking"
-grep -q 'filling web forms' "$README" || fail "README must exclude filling web forms"
+# publish without flag must fail (policy; no browser needed)
+if python3 "${SCRIPTS}/lib/browser.py" publish-click 'button' 2>/tmp/tcu-pub.err; then
+  fail "publish-click without --i-mean-it must fail"
+fi
+grep -qi 'i-mean-it' /tmp/tcu-pub.err || fail "publish-click error must mention --i-mean-it"
+pass "publish-click blocked without --i-mean-it"
+
+# --- docs ---
+grep -q 'browser.sh' "$SKILL_MD" || fail "SKILL.md must list browser.sh"
+grep -q 'i-mean-it' "$SKILL_MD" || fail "SKILL.md must mention --i-mean-it"
 grep -q 'not GUI pixel control' "$SKILL_MD" || fail "SKILL.md must state not GUI pixel control"
-grep -q 'open-target.sh' "$SKILL_MD" || fail "SKILL.md capability map must list open-target.sh"
-grep -q 'clipboard.sh' "$SKILL_MD" || fail "SKILL.md capability map must list clipboard.sh"
-pass "README/SKILL docs exclude GUI click/form-fill; list open+clipboard"
+pass "SKILL.md documents browser DOM + publish gate + non-vision"
 
-# --- script inventory includes expected helpers, not browser ---
-# Bash 3.2-safe (macOS /bin/bash): no mapfile
+# inventory
 inv_file="$(mktemp)"
 find "$SCRIPTS" -maxdepth 1 -type f \( -name '*.sh' -o -name '*.py' \) -exec basename {} \; | sort >"$inv_file"
 grep -qx 'open-target.sh' "$inv_file" || fail "open-target.sh missing from inventory"
 grep -qx 'clipboard.sh' "$inv_file" || fail "clipboard.sh missing"
-grep -qx 'screenshot.sh' "$inv_file" || fail "screenshot.sh missing"
-grep -qx 'osascript-run.sh' "$inv_file" || fail "osascript-run.sh missing"
+grep -qx 'browser.sh' "$inv_file" || fail "browser.sh missing from inventory"
 count="$(wc -l <"$inv_file" | tr -d ' ')"
 rm -f "$inv_file"
-pass "inventory has open-target, clipboard, screenshot, osascript-run (${count} scripts)"
+pass "inventory has open-target, clipboard, browser (${count} scripts)"
 
 echo
-echo "SUMMARY: TCU capability surface matches Medium analysis baseline"
-echo "  can: open URL (open-target), system clipboard"
-echo "  cannot (supported): browser DOM click/fill/publish"
+echo "SUMMARY: TCU capability surface supports Medium path with gated publish"
+echo "  can: open URL, clipboard, browser DOM click/fill, medium-draft"
+echo "  publish: medium-publish / publish-click only with --i-mean-it"
 echo "ALL PASSED"

@@ -49,6 +49,12 @@ bash "$SCRIPTS/open-target.sh" <app-or-path-or-url>
 bash "$SCRIPTS/notify.sh" --title TCU "done"
 bash "$SCRIPTS/clipboard.sh" get
 bash "$SCRIPTS/safe-trash.sh" --dry-run <path>
+bash "$SCRIPTS/browser.sh" start --headed
+bash "$SCRIPTS/browser.sh" open 'https://example.com'
+bash "$SCRIPTS/browser.sh" medium-draft --title '…' --body-file ./draft.md
+# publish only with explicit user intent:
+# bash "$SCRIPTS/browser.sh" medium-publish --i-mean-it
+bash "$SCRIPTS/browser.sh" stop
 
 ## Tasks
 If the user says /computer or "computer use", treat the rest as the task. Prefer safe defaults; ask only when the action is highly destructive or ambiguous.
