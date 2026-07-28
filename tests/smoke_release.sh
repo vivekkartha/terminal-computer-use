@@ -24,6 +24,13 @@ else
   bad "help"; cat /tmp/tcu-help.out
 fi
 
+step "medium-workflow capability surface (no browser click/publish)"
+if bash "${ROOT}/tests/test_medium_workflow_capability_surface.sh" >/tmp/tcu-cap.out 2>&1; then
+  ok "capability surface"
+else
+  bad "capability surface"; cat /tmp/tcu-cap.out
+fi
+
 step "fs-move spaces + safe mode"
 if bash "${ROOT}/tests/test_fs_move.sh" >/tmp/tcu-move.out 2>&1; then
   ok "fs-move"

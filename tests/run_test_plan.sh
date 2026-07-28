@@ -59,6 +59,13 @@ else
   record T03 FAIL
 fi
 
+# T03b Medium workflow capability surface (open+clipboard; not browser publish)
+if bash "${ROOT}/tests/test_medium_workflow_capability_surface.sh" >/tmp/tcu-t03b.out 2>&1; then
+  record T03b PASS
+else
+  record T03b FAIL
+fi
+
 # T04–T06 Organize
 FIX="$(mktemp -d "${TMPDIR:-/tmp}/tcu-tp-XXXXXX")"
 printf x > "${FIX}/Screenshot plan.png"

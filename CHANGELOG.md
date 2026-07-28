@@ -4,6 +4,7 @@
 
 ### Added
 - GitHub Actions CI (`.github/workflows/ci.yml`) and OpenSSF Scorecard workflow
+- `tests/test_medium_workflow_capability_surface.sh` — locks open-URL + clipboard surface; asserts no browser click/publish scripts (Medium E2E analysis baseline)
 
 ## [0.3.0] — 2026-07-23
 
