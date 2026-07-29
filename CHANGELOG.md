@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+- README: conversion-first (install + why vs vision CU above the fold)
+- GitHub description/topics for discoverability
+- `docs/GROWTH.md` — solo distribution playbook + post templates
+
 ## [0.5.0] — 2026-07-29
 
 ### Removed
