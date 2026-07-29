@@ -14,12 +14,13 @@ bash tests/test_scripts_help.sh
 
 ## Guidelines
 
-1. **Scripts over prompts** — real automation lives in `skills/computer/scripts/`.
-2. **Portable paths** — never hardcode `~/.grok` or other agent-only paths.
+1. **Scripts over prompts** — automation lives in `skills/computer/scripts/`.
+2. **Portable paths** — never hardcode agent-only homes.
 3. Use `lib/common.sh` + `lib/platform.sh` for OS differences.
-4. Every script needs `--help`; mutating scripts need `--dry-run`.
-5. Add/adjust tests under `tests/`.
-6. Keep the product focused: desktop/files/apps via terminal — not browser-use, not vision CU.
+4. Every script needs `--help`; mutators need `--dry-run`.
+5. Tests under `tests/`. Update SKILL capability table on new entry points.
+6. Scope: terminal control plane + optional Playwright DOM — not vision/pixel CU.
+7. **Docs/replies:** professionally concise — short summaries, tables, commands; no walls of text.
 
 ## PR checklist
 

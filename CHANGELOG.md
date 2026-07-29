@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- Docs/agent prompts: professionally concise style (short summaries, tables; no walls of text)
+
 ## [0.4.0] — 2026-07-29
 
 ### Added

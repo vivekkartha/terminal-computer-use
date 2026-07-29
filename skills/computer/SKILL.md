@@ -163,6 +163,10 @@ See `references/safety.md`, `references/browser.md`, `references/macos-cli.md`, 
 /computer browser start headed; medium-draft title "…" body-file ./draft.md
 ```
 
+## Communication
+
+**Professionally concise always:** lead with a short summary; use tables/commands; skip long prose. Same bar for README, handoffs, and agent replies.
+
 ## After complex work
 
 1. Leave new scripts in `scripts/` with `--help`.

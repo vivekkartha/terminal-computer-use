@@ -1,84 +1,37 @@
-# Copy-paste prompt for any coding agent
+# Agent bootstrap — Terminal Computer Use
 
-Paste the block below into Claude Code, Cursor, Codex, Grok, Gemini CLI, Windsurf, or any agent with shell access. It loads **Terminal Computer Use** (shell desktop automation — not vision Computer Use).
-
----
-
-## Prompt (copy everything inside the fence)
+Paste into any coding agent with shell access.
 
 ```text
-Use Terminal Computer Use for desktop tasks in this session: control files, apps, clipboard, and notifications via shell scripts — not screenshots or mouse clicks.
+Use Terminal Computer Use for desktop tasks: scripts for files, apps, clipboard,
+notify, optional browser DOM — not vision/pixel CU.
 
-## Bootstrap (once per machine if the skill is missing)
-1. Find SKILL.md (first match wins):
-   - $TERMINAL_COMPUTER_USE_HOME
-   - ~/.agents/skills/computer
-   - ~/.claude/skills/computer
-   - ~/.grok/skills/computer
-   - ~/.cursor/skills/computer
-2. If missing, install permanently (not only /tmp):
-   git clone --depth 1 https://github.com/vivekkartha/terminal-computer-use.git ~/terminal-computer-use
-   bash ~/terminal-computer-use/install.sh
-   Re-check the paths above.
-3. Set SCRIPTS to <skill-root>/scripts
-4. Read <skill-root>/SKILL.md and follow it.
-5. Run: bash "$SCRIPTS/doctor.sh" — fix any FAIL before bulk file operations.
+Bootstrap: resolve SKILL.md from $TERMINAL_COMPUTER_USE_HOME or
+~/.agents|~/.claude|~/.grok|~/.cursor/skills/computer. If missing:
+  git clone --depth 1 https://github.com/vivekkartha/terminal-computer-use.git ~/terminal-computer-use
+  bash ~/terminal-computer-use/install.sh
+Set SCRIPTS=<skill-root>/scripts. Read SKILL.md. Run doctor.sh; fix FAILs before bulk ops.
 
-## Working rules
-- Prefer scripts under $SCRIPTS over one-off shell.
-- For bulk file changes: --dry-run first unless the user explicitly asked to apply immediately.
-- Honor TCU_SAFE_MODE=1 (forces dry-run on mutators: move/copy/trash/organize).
-- Quote paths that contain spaces; expand globs in the shell before calling scripts.
-- Do not bulk rm -rf user data; use safe-trash.sh for deletes.
-- Refuse catastrophic targets ($HOME, /, system paths).
-- macOS app control may need Accessibility/Automation for the terminal app.
-- Say what you ran and what changed.
-- Goal-first observation: use structured checks (paths, apps, clipboard, dry-run plans, doctor)
-  before screenshots. Use screenshot.sh only when the goal needs visual/UI state those cannot
-  provide — never screenshot first for file/app/clipboard tasks.
+Rules:
+- Prefer $SCRIPTS over ad-hoc shell.
+- Bulk files: --dry-run first unless user said apply now.
+- Honor TCU_SAFE_MODE=1.
+- Browser publish needs --i-mean-it.
+- No bulk rm -rf; use safe-trash.sh.
+- Structured checks before screenshots.
+- Replies: professionally concise (short summary, tables/commands; no walls of text).
 
-## Useful commands
-SCRIPTS=<skill-root>/scripts
-bash "$SCRIPTS/doctor.sh"
-python3 "$SCRIPTS/fs-organize.py" --dry-run ~/Desktop
-python3 "$SCRIPTS/fs-organize.py" --apply          # run last plan
-python3 "$SCRIPTS/fs-organize.py" --undo           # reverse last apply
-python3 "$SCRIPTS/fs-organize.py" ~/Desktop        # execute + record plan
-bash "$SCRIPTS/fs-move.sh" --dry-run <src> <dest>
-bash "$SCRIPTS/open-target.sh" <app-or-path-or-url>
-bash "$SCRIPTS/notify.sh" --title TCU "done"
-bash "$SCRIPTS/clipboard.sh" get
-bash "$SCRIPTS/safe-trash.sh" --dry-run <path>
-bash "$SCRIPTS/browser.sh" start --headed
-bash "$SCRIPTS/browser.sh" open 'https://example.com'
-bash "$SCRIPTS/browser.sh" medium-draft --title '…' --body-file ./draft.md
-# publish only with explicit user intent:
-# bash "$SCRIPTS/browser.sh" medium-publish --i-mean-it
-bash "$SCRIPTS/browser.sh" stop
+Commands:
+  bash "$SCRIPTS/doctor.sh"
+  python3 "$SCRIPTS/fs-organize.py" --dry-run ~/Desktop
+  python3 "$SCRIPTS/fs-organize.py" --apply | --undo
+  bash "$SCRIPTS/open-target.sh" <target>
+  bash "$SCRIPTS/browser.sh" start --headed
+  bash "$SCRIPTS/browser.sh" medium-draft --title '…' --body-file ./draft.md
+  # bash "$SCRIPTS/browser.sh" medium-publish --i-mean-it
+  bash "$SCRIPTS/browser.sh" stop
+  bash "$SCRIPTS/clipboard.sh" get
+  bash "$SCRIPTS/notify.sh" --title TCU "done"
 
-## Tasks
-If the user says /computer or "computer use", treat the rest as the task. Prefer safe defaults; ask only when the action is highly destructive or ambiguous.
-
-Reply with one line confirming skill path + doctor result (ok/warn/fail), then do the task.
-```
-
----
-
-## Short variant (skill already installed)
-
-```text
-Use Terminal Computer Use: read SKILL.md under ~/.agents/skills/computer (or ~/.claude / ~/.grok / ~/.cursor), set SCRIPTS to its scripts/ directory, run doctor if needed, then handle my request with those scripts. Dry-run bulk file ops first. Prefer library scripts over ad-hoc shell. Prefer structured verification over screenshots unless the goal needs visual/UI state.
-
-Task: <describe what you want>
-```
-
----
-
-## Example tasks
-
-```text
-organize my desktop (dry-run first, then apply if the plan looks right)
-open Slack and reveal ~/Downloads
-move PDFs on Desktop into ~/Documents/PDFs
-quit Spotify and send a notification when done
+On /computer or "computer use": do the task. Confirm skill path + doctor (ok/warn/fail) in one line, then act.
 ```
