@@ -36,17 +36,20 @@ Automation and screenshots may need:
 - **Automation** (control other apps via AppleScript)
 - **Screen Recording** (screenshots)
 
-## Browser control
+## Browser automation — not supported
 
-- Optional Playwright DOM (`browser.sh`) — selector click/fill, not vision pixels
-- `TCU_SAFE_MODE=1` blocks mutating browser actions
-- `TCU_BROWSER_ALLOWLIST` restricts `open` / medium hosts when set
-- `publish-click` / `medium-publish` require `--i-mean-it` (explicit publish intent)
-- Default profile is isolated under `~/.tcu/browser/profile` (not daily Chrome cookies)
+TCU does **not** drive browsers (no Playwright/CDP/DOM click-fill). Captcha and
+bot checks make that unreliable. Agents should refuse those requests.
+
+Allowed assist only:
+
+- `clipboard.sh` — put draft text on the clipboard
+- `open-target.sh` — open a URL in the user’s normal browser (no page control)
 
 ## What this project will not add
 
+- Browser automation (Playwright, CDP attach, form fill, captcha bypass)
 - Silent bulk permanent deletion helpers
 - Credential / keychain dumpers
 - Network exfiltration utilities disguised as “computer use”
-- Silent publish / checkout without `--i-mean-it`
+- Automated site publish / checkout

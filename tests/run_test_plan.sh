@@ -59,8 +59,8 @@ else
   record T03 FAIL
 fi
 
-# T03b Medium workflow capability surface (open+clipboard; not browser publish)
-if bash "${ROOT}/tests/test_medium_workflow_capability_surface.sh" >/tmp/tcu-t03b.out 2>&1; then
+# T03b Capability surface (open+clipboard; browser automation absent)
+if bash "${ROOT}/tests/test_capability_surface.sh" >/tmp/tcu-t03b.out 2>&1; then
   record T03b PASS
 else
   record T03b FAIL

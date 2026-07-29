@@ -2,23 +2,29 @@
 
 ## [Unreleased]
 
-### Added
-- `chrome-cdp.sh` + `browser.sh connect` — real Chrome CDP for Cloudflare/Medium captcha (bot Chromium cannot pass)
+## [0.5.0] — 2026-07-29
 
+### Removed
+- **Browser automation** (Playwright DOM): `browser.sh`, `chrome-cdp.sh`, `lib/browser*.py`, `references/browser.md`, Medium draft/publish helpers, browser demos/tests
+- Rationale: captcha/bot checks and post-auth trust scoring make terminal browser control unreliable; not a TCU strength
 
 ### Changed
+- Agents must **refuse** browser automation requests (click/fill/DOM/captcha/publish); optional assist: `clipboard.sh` + `open-target.sh` (open URL only)
+- SKILL/README/AGENT_PROMPT/SECURITY/safety docs: desktop-only scope
+- Capability surface test asserts browser scripts absent + refuse docs present
 - Docs/agent prompts: professionally concise style (short summaries, tables; no walls of text)
 
 ## [0.4.0] — 2026-07-29
 
 ### Added
-- **Browser DOM control** (optional Playwright): `browser.sh` + `lib/browser.py` / `browser_daemon.py` / `browser_policy.py`
+- **Browser DOM control** (optional Playwright): `browser.sh` + `lib/browser.py` / `browser_daemon.py` / `browser_policy.py` *(removed in 0.5.0)*
   - Session: `start` / `stop` / `status` (CDP, isolated profile under `~/.tcu/browser/`)
   - Act: `open`, `click`, `fill`, `type`, `press`, `paste`, `wait`, `text`, `html`, `screenshot`, `copy`
   - Medium: `medium-draft` (no publish) · `medium-publish --i-mean-it`
   - Gates: `TCU_SAFE_MODE`, `TCU_BROWSER_ALLOWLIST`, publish requires `--i-mean-it`
 - `references/browser.md` Medium recipe + install notes
 - Tests: `test_browser_policy.py`, `test_browser_smoke.py`; capability surface asserts gated publish
+- `chrome-cdp.sh` + `browser.sh connect` — real Chrome CDP for Cloudflare/Medium captcha
 
 ### Changed
 - SKILL/README/doctor: browser as optional capability; still not vision/pixel CU

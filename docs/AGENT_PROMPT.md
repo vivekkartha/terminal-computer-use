@@ -4,7 +4,7 @@ Paste into any coding agent with shell access.
 
 ```text
 Use Terminal Computer Use for desktop tasks: scripts for files, apps, clipboard,
-notify, optional browser DOM — not vision/pixel CU.
+notify — not vision/pixel CU. Browser automation is NOT supported.
 
 Bootstrap: resolve SKILL.md from $TERMINAL_COMPUTER_USE_HOME or
 ~/.agents|~/.claude|~/.grok|~/.cursor/skills/computer. If missing:
@@ -16,7 +16,8 @@ Rules:
 - Prefer $SCRIPTS over ad-hoc shell.
 - Bulk files: --dry-run first unless user said apply now.
 - Honor TCU_SAFE_MODE=1.
-- Browser publish needs --i-mean-it.
+- Browser automation (click/fill/DOM/Playwright/captcha/site publish): refuse —
+  not possible with TCU. May offer clipboard.sh + open-target.sh (open URL only).
 - No bulk rm -rf; use safe-trash.sh.
 - Structured checks before screenshots.
 - Replies: professionally concise (short summary, tables/commands; no walls of text).
@@ -26,10 +27,6 @@ Commands:
   python3 "$SCRIPTS/fs-organize.py" --dry-run ~/Desktop
   python3 "$SCRIPTS/fs-organize.py" --apply | --undo
   bash "$SCRIPTS/open-target.sh" <target>
-  bash "$SCRIPTS/browser.sh" start --headed
-  bash "$SCRIPTS/browser.sh" medium-draft --title '…' --body-file ./draft.md
-  # bash "$SCRIPTS/browser.sh" medium-publish --i-mean-it
-  bash "$SCRIPTS/browser.sh" stop
   bash "$SCRIPTS/clipboard.sh" get
   bash "$SCRIPTS/notify.sh" --title TCU "done"
 

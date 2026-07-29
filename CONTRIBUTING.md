@@ -19,7 +19,7 @@ bash tests/test_scripts_help.sh
 3. Use `lib/common.sh` + `lib/platform.sh` for OS differences.
 4. Every script needs `--help`; mutators need `--dry-run`.
 5. Tests under `tests/`. Update SKILL capability table on new entry points.
-6. Scope: terminal control plane + optional Playwright DOM — not vision/pixel CU.
+6. Scope: terminal control plane (files/apps/clipboard) — not vision/pixel CU, not browser automation.
 7. **Docs/replies:** professionally concise — short summaries, tables, commands; no walls of text.
 
 ## PR checklist

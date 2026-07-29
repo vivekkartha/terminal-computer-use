@@ -3,8 +3,8 @@
 ## Threat model
 
 Terminal Computer Use lets an AI coding agent run shell scripts that **move files,
-open/quit apps, change clipboard state, and (optionally) drive a Playwright browser
-session** on your machine. Browser publish actions require explicit `--i-mean-it`.
+open/quit apps, and change clipboard state** on your machine. It does **not**
+automate browsers (no Playwright/DOM control).
 
 | Assume | Do not assume |
 |--------|----------------|

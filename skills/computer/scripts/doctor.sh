@@ -123,40 +123,16 @@ else
   fail_ "SKILL.md missing at $SKILL_ROOT"
 fi
 
-if [[ -f "${SCRIPTS_DIR}/browser.sh" ]]; then
-  pass "browser.sh present"
+if [[ -f "${SCRIPTS_DIR}/browser.sh" ]] || [[ -f "${SCRIPTS_DIR}/lib/browser.py" ]]; then
+  warn_ "legacy browser automation scripts found — remove them (unsupported since 0.5)"
 else
-  warn_ "browser.sh missing"
-fi
-
-echo
-echo "=== browser (optional Playwright) ==="
-if have python3 && python3 -c 'import playwright' 2>/dev/null; then
-  pass "playwright python package"
-  if python3 -c 'from playwright.sync_api import sync_playwright' 2>/dev/null; then
-    pass "playwright.sync_api import"
-  else
-    warn_ "playwright import broken"
-  fi
-else
-  warn_ "playwright not installed — browser.sh needs: python3 -m pip install playwright && python3 -m playwright install chromium"
-fi
-if [[ -f "${SCRIPTS_DIR}/chrome-cdp.sh" ]]; then
-  pass "chrome-cdp.sh (real Chrome for captcha sites)"
-else
-  warn_ "chrome-cdp.sh missing"
-fi
-if [[ -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]] || have google-chrome; then
-  pass "Google Chrome present (Medium auth path)"
-else
-  warn_ "Google Chrome not found — Medium captcha path needs real Chrome"
+  pass "no browser automation scripts (by design)"
 fi
 
 echo
 echo "=== try next ==="
 echo "  python3 \"${SCRIPTS_DIR}/fs-organize.py\" --dry-run \"\$(bash \"${SCRIPTS_DIR}/desktop-path.sh\")\""
 echo "  bash \"${SCRIPTS_DIR}/notify.sh\" --title TCU \"doctor ok\""
-echo "  bash \"${SCRIPTS_DIR}/browser.sh\" start --headed"
 echo "  /computer organize my desktop"
 echo
 if [[ "$warn" -gt 0 ]]; then

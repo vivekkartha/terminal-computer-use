@@ -7,7 +7,7 @@ Executed by automation / release smoke. IDs map to `tests/run_test_plan.sh`.
 | T01 | Bootstrap paths | Resolve skill root from install locations | SKILL.md found |
 | T02 | Doctor | `doctor.sh` | exit 0, reports version |
 | T03 | Help surface | every script `--help` | exit 0 |
-| T03b | Medium capability surface | `test_medium_workflow_capability_surface.sh` | open URL + clipboard only; no browser/publish scripts; README excludes GUI click/forms |
+| T03b | Capability surface | `test_capability_surface.sh` | open URL + clipboard; browser automation scripts absent; docs refuse browser CU |
 | T04 | Organize dry-run | fixture + `--dry-run` | no moves, plan printed |
 | T05 | Organize apply | smart organize fixture | categories created |
 | T06 | Organize idempotent | re-run organize | nothing to do / exit 0 |

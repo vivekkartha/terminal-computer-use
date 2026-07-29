@@ -1,7 +1,7 @@
 # Terminal Computer Use
 
-Shell automation for coding agents: files, apps, clipboard, optional Playwright DOM.  
-Not vision/pixel computer-use.
+Shell automation for coding agents: files, apps, clipboard, notify.  
+Not vision/pixel computer-use. **No browser automation** (captcha/bot checks make it unreliable).
 
 | | |
 |--|--|
@@ -28,16 +28,17 @@ Agent bootstrap: [docs/AGENT_PROMPT.md](docs/AGENT_PROMPT.md) · macOS Accessibi
 |-----|--------|
 | Organize (plan/apply/undo) | `fs-organize.py` |
 | Move / copy / trash | `fs-move.sh` · `fs-copy.sh` · `safe-trash.sh` |
-| Open app/file/URL | `open-target.sh` |
+| Open app/file/URL | `open-target.sh` (URL = open only; no page control) |
 | Apps / clipboard / notify | `quit-app.sh` · `clipboard.sh` · `notify.sh` |
-| Browser DOM (optional) | `browser.sh` · Medium: `medium-draft` · publish: `medium-publish --i-mean-it` |
 | Health | `doctor.sh` |
+
+**Not supported:** browser DOM click/fill, Playwright, captcha, automated site publish. Agents should refuse those requests and optionally offer clipboard + open URL only.
 
 ## Safety
 
 - `--dry-run` on mutators · `TCU_SAFE_MODE=1` blocks mutations  
 - Organize undo: `fs-organize.py --undo` (`~/.tcu/`)  
-- Publish requires `--i-mean-it` · no telemetry  
+- No telemetry  
 - [SECURITY](SECURITY.md) · [TRUST](docs/TRUST.md)
 
 ## Develop
