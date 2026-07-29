@@ -141,6 +141,16 @@ if have python3 && python3 -c 'import playwright' 2>/dev/null; then
 else
   warn_ "playwright not installed — browser.sh needs: python3 -m pip install playwright && python3 -m playwright install chromium"
 fi
+if [[ -f "${SCRIPTS_DIR}/chrome-cdp.sh" ]]; then
+  pass "chrome-cdp.sh (real Chrome for captcha sites)"
+else
+  warn_ "chrome-cdp.sh missing"
+fi
+if [[ -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]] || have google-chrome; then
+  pass "Google Chrome present (Medium auth path)"
+else
+  warn_ "Google Chrome not found — Medium captcha path needs real Chrome"
+fi
 
 echo
 echo "=== try next ==="

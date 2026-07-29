@@ -10,16 +10,31 @@ python3 -m playwright install chromium
 bash "$SCRIPTS/doctor.sh"   # WARN if missing; core file ops still OK
 ```
 
+## Captcha / Medium auth (important)
+
+Playwright **Chromium** is often blocked by Cloudflare (“Just a moment…”). It will **not** pass captcha for you.
+
+**Do this once for Medium:**
+
+```bash
+S=…/skills/computer/scripts
+bash "$S/browser.sh" stop                    # kill bot Chromium if running
+bash "$S/chrome-cdp.sh"                      # real Google Chrome + port 9222
+# complete captcha + Medium login in that window
+bash "$S/browser.sh" connect --port 9222     # TCU attaches; does not kill Chrome
+```
+
+Session profile for that Chrome: `~/.tcu/chrome-medium` (survives restarts).
+
 ## Session
 
 ```bash
 S=…/skills/computer/scripts
-bash "$S/browser.sh" start --headed    # default profile: ~/.tcu/browser/profile
+bash "$S/browser.sh" start --headed    # bot Chromium — OK for example.com, not Medium auth
+bash "$S/browser.sh" connect --port 9222
 bash "$S/browser.sh" status
-bash "$S/browser.sh" stop
+bash "$S/browser.sh" stop              # bot only; on external CDP = detach only
 ```
-
-Isolated profile by default (not your daily Chrome cookies). Pass `--profile PATH` only when you intentionally want a logged-in profile (e.g. already signed into Medium).
 
 ## Generic DOM
 

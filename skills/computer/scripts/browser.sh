@@ -13,6 +13,8 @@ usage: browser.sh [--i-mean-it] <command> [args]
 
 Session:
   start [--headed|--headless] [--profile PATH] [--channel chrome]
+  connect --port 9222          # attach real Chrome (captcha-friendly)
+  chrome-cdp.sh                # launch real Chrome + CDP (Medium login)
   stop
   status
 

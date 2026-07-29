@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+- `chrome-cdp.sh` + `browser.sh connect` — real Chrome CDP for Cloudflare/Medium captcha (bot Chromium cannot pass)
+
+
 ### Changed
 - Docs/agent prompts: professionally concise style (short summaries, tables; no walls of text)
 

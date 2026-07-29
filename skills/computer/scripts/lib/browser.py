@@ -105,7 +105,50 @@ def port_open(port: int) -> bool:
         return False
 
 
+def cmd_connect(args: argparse.Namespace) -> int:
+    """Attach to an existing browser CDP (real Chrome — captcha-friendly)."""
+    port = int(args.port)
+    if not port_open(port):
+        die(
+            f"nothing listening on 127.0.0.1:{port}. Start real Chrome first:\n"
+            f'  bash "$(dirname "$0")/../chrome-cdp.sh"   # or see references/browser.md'
+        )
+    cdp = f"http://127.0.0.1:{port}"
+    # verify CDP speaks
+    try:
+        import urllib.request
+
+        with urllib.request.urlopen(f"{cdp}/json/version", timeout=3) as r:
+            meta = json.loads(r.read().decode())
+    except Exception as e:
+        die(f"CDP port open but not Chrome DevTools: {e}")
+
+    sess = {
+        "port": port,
+        "cdp": cdp,
+        "pid": None,  # external process — stop will not kill Chrome
+        "profile": "external-cdp",
+        "headed": True,
+        "channel": "external",
+        "browser": meta.get("Browser", "unknown"),
+        "external": True,
+    }
+    write_session(sess)
+    # no pid file ownership
+    try:
+        state_paths()["pid"].unlink()
+    except FileNotFoundError:
+        pass
+    print(json.dumps({"ok": True, "already_running": True, **sess}))
+    return 0
+
+
 def cmd_start(args: argparse.Namespace) -> int:
+    # Attach-only path (preferred for Medium / Cloudflare sites)
+    if getattr(args, "connect_port", None):
+        args.port = args.connect_port
+        return cmd_connect(args)
+
     existing = read_session()
     if existing and port_open(int(existing.get("port", 0))):
         print(json.dumps({"ok": True, "already_running": True, **existing}))
@@ -117,6 +160,8 @@ def cmd_start(args: argparse.Namespace) -> int:
 
     # Launch via Playwright Python so Chromium path is correct.
     # Use a small detached helper process that holds the browser open.
+    # NOTE: Playwright Chromium is often blocked by Cloudflare captchas.
+    # For Medium auth, prefer: chrome-cdp.sh + browser.sh connect --port 9222
     helper = Path(__file__).resolve().parent / "browser_daemon.py"
     env = os.environ.copy()
     env["TCU_BROWSER_PORT"] = str(port)
@@ -155,6 +200,7 @@ def cmd_start(args: argparse.Namespace) -> int:
         "profile": str(profile),
         "headed": not args.headless,
         "channel": args.channel or "chromium",
+        "external": False,
     }
     write_session(sess)
     state_paths()["pid"].write_text(str(proc.pid) + "\n")
@@ -164,6 +210,11 @@ def cmd_start(args: argparse.Namespace) -> int:
 
 def cmd_stop(_args: argparse.Namespace) -> int:
     sess = read_session()
+    if sess and sess.get("external"):
+        # Do not kill user's real Chrome — only drop session binding
+        clear_session()
+        print(json.dumps({"ok": True, "stopped": True, "note": "detached CDP only; Chrome left running"}))
+        return 0
     pid = None
     if sess:
         pid = sess.get("pid")
@@ -487,13 +538,23 @@ def cmd_medium_draft(args: argparse.Namespace) -> int:
         page.goto(url, wait_until="domcontentloaded", timeout=args.timeout)
         page.wait_for_timeout(1500)
         live = page.url or ""
+        title = (page.title() or "").lower()
+        if "just a moment" in title or "cf-chl" in live or "challenge" in live:
+            shot = state_paths()["root"] / "medium-draft.png"
+            page.screenshot(path=str(shot), full_page=False)
+            die(
+                "Cloudflare captcha wall — Playwright Chromium cannot pass this. "
+                "Use real Chrome: bash …/chrome-cdp.sh  →  browser.sh connect --port 9222. "
+                f"url={live} screenshot={shot}"
+            )
         if "signin" in live or "login" in live.lower() or "/m/signin" in live:
             shot = state_paths()["root"] / "medium-draft.png"
             page.screenshot(path=str(shot), full_page=False)
             die(
                 "Medium login required (landed on sign-in). "
-                "Log in once in this headed browser, or restart with "
-                "`browser.sh start --headed --profile <Chrome profile with Medium session>`. "
+                "Playwright Chromium often fails captcha. Prefer real Chrome CDP:\n"
+                "  bash \"$SCRIPTS/chrome-cdp.sh\"   # complete captcha+login once\n"
+                "  bash \"$SCRIPTS/browser.sh\" connect --port 9222\n"
                 f"url={live} screenshot={shot}"
             )
         # Title
@@ -585,7 +646,20 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--headless", action="store_true", help="headless chromium")
     s.add_argument("--profile", default="", help="user data dir (default ~/.tcu/browser/profile)")
     s.add_argument("--channel", default="", help="chrome|chromium|msedge (optional)")
+    s.add_argument(
+        "--connect-port",
+        type=int,
+        default=0,
+        help="attach to existing Chrome CDP port (no launch; captcha-friendly)",
+    )
     s.set_defaults(func=cmd_start)
+
+    c = sub.add_parser(
+        "connect",
+        help="attach to real Chrome CDP (use after chrome-cdp.sh; bypasses bot Chromium captcha)",
+    )
+    c.add_argument("--port", type=int, default=9222)
+    c.set_defaults(func=cmd_connect)
 
     sub.add_parser("stop", help="stop browser session").set_defaults(func=cmd_stop)
     sub.add_parser("status", help="session + page status JSON").set_defaults(
