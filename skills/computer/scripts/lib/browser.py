@@ -486,6 +486,16 @@ def cmd_medium_draft(args: argparse.Namespace) -> int:
     def _draft(page):
         page.goto(url, wait_until="domcontentloaded", timeout=args.timeout)
         page.wait_for_timeout(1500)
+        live = page.url or ""
+        if "signin" in live or "login" in live.lower() or "/m/signin" in live:
+            shot = state_paths()["root"] / "medium-draft.png"
+            page.screenshot(path=str(shot), full_page=False)
+            die(
+                "Medium login required (landed on sign-in). "
+                "Log in once in this headed browser, or restart with "
+                "`browser.sh start --headed --profile <Chrome profile with Medium session>`. "
+                f"url={live} screenshot={shot}"
+            )
         # Title
         if title:
             tloc = page.locator(MEDIUM_TITLE_SEL).first
@@ -535,6 +545,9 @@ def cmd_medium_publish(args: argparse.Namespace) -> int:
         die(msg)
 
     def _pub(page):
+        live = page.url or ""
+        if "signin" in live or "/m/signin" in live:
+            die(f"Medium login required before publish (url={live})")
         # First Publish button (opens modal)
         try:
             page.locator(MEDIUM_PUBLISH_SEL).first.click(timeout=args.timeout)
